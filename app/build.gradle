@@ -102,4 +102,9 @@ dependencies {
     implementation 'org.apache.commons:commons-lang3:3.5'
     implementation 'commons-io:commons-io:2.5'
     implementation group: 'commons-validator', name: 'commons-validator', version: '1.6'
+
+    implementation "com.google.accompanist:accompanist-permissions:0.27.1"
+
+    debugImplementation "androidx.customview:customview:1.2.0-alpha02"
+    debugImplementation "androidx.customview:customview-poolingcontainer:1.0.0"
 }
