@@ -9,15 +9,21 @@ import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavHostController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
+import com.limosys.test.tripostestapp.R
+import com.limosys.test.tripostestapp.component.MessageHandler
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
+import com.limosys.test.tripostestapp.utils.MessageState
 
 
 @Composable
@@ -26,14 +32,14 @@ fun InitializationScreen(
     state: InitializationState,
     handleEvent: (InitializationState) -> Unit
 ) {
-    MainContent {
+    MainContent(state) {
         handleEvent.invoke(InitializationState.InitializeSdk)
     }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun MainContent(handleEvent: () -> Unit) {
+fun MainContent(state: InitializationState, handleEvent: () -> Unit) {
     val permissionsToCheck = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         rememberMultiplePermissionsState(
             permissions = listOf(
@@ -61,11 +67,47 @@ fun MainContent(handleEvent: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            DisplayStatus(state)
             InitializeSdkButton(permissionsToCheck) {
                 handleEvent.invoke()
             }
         }
     }
+}
+
+@Composable
+fun DisplayStatus(state: InitializationState) {
+    when (state) {
+        is InitializationState.SdkInitializationSuccess -> {
+            DisplayMessage(message = stringResource(id = R.string.turn_on_triPOS_bluetooth_device))
+        }
+        is InitializationState.SdkInitializationException -> {
+            val message = state.message
+            DisplayMessage(message = message)
+        }
+        is InitializationState.DeviceConnected -> {
+            DisplayMessage(message = stringResource(id = R.string.connected))
+        }
+        is InitializationState.DeviceDisconnected -> {
+            DisplayMessage(message = stringResource(id = R.string.disconnected))
+        }
+        is InitializationState.DeviceConnectionError -> {
+            val message: String = state.errorMessage
+            DisplayMessage(message = message)
+        }
+        is InitializationState.DeviceBatteryLow -> {
+            MessageHandler(state = MessageState.WARNING(stringResource(id = R.string.battery_low)))
+        }
+        is InitializationState.DeviceWarning -> {
+            val warning: String = state.warningMessage
+            MessageHandler(state = MessageState.WARNING(warning))
+        }
+        else -> {}
+    }
+}
+@Composable
+private fun DisplayMessage(message: String) {
+    Text(text = message, textAlign = TextAlign.Center)
 }
 
 @OptIn(ExperimentalPermissionsApi::class)

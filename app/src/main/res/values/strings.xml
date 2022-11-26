@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">TriposTestApp</string>
+    <string name="battery_low">Battery Low</string>
+    <string name="connecting">Connecting…</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="turn_on_triPOS_bluetooth_device">Please turn on the triPOS bluetooth device to pair. Note: The passkey can be found behind the device.</string>
+    <string name="action_ok">Ok</string>
 </resources>
