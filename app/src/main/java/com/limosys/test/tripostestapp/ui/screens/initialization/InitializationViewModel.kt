@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.utils.TriposConfig
+import com.vantiv.triposmobilesdk.BuildConfig
 import com.vantiv.triposmobilesdk.Device
 import com.vantiv.triposmobilesdk.DeviceConnectionListener
 import com.vantiv.triposmobilesdk.VTP
@@ -39,30 +40,44 @@ class InitializationViewModel @Inject constructor(application: Application): And
             viewModelScope.launch(Dispatchers.IO) {
                 try {
                     sharedVtp.initialize(getApplication() as Context, TriposConfig.getSharedConfig(), this@InitializationViewModel)
+                    _initializationState.value = InitializationState.SdkInitializationSuccess(sharedVtp)
                 } catch (e: Exception) {
-                    print(e.message)
+                    if (BuildConfig.DEBUG) {
+                        print(e.message)
+                    }
+                    _initializationState.value = InitializationState.SdkInitializationException(e.message)
                 }
             }
         }
     }
 
     override fun onConnected(p0: Device?, p1: String?, p2: String?, p3: String?) {
-       print("Connected")
+        debug("Connected")
+        this._initializationState.value = InitializationState.DeviceConnected
     }
 
     override fun onDisconnected(p0: Device?) {
-        print("Disconnected")
+        debug("Disconnected")
+        this._initializationState.value = InitializationState.DeviceDisconnected
     }
 
     override fun onError(p0: Exception?) {
-        print(p0?.message ?: "")
+        debug(p0?.message ?: "")
+        this._initializationState.value = InitializationState.DeviceConnectionError(p0?.message ?: "")
     }
 
     override fun onBatteryLow() {
-        print("Low Batter")
+        debug("Low Batter")
+        this._initializationState.value = InitializationState.DeviceBatteryLow
     }
 
     override fun onWarning(p0: Exception?) {
-        print(p0?.message ?: "")
+        debug(p0?.message ?: "")
+        this._initializationState.value = InitializationState.DeviceWarning(p0?.message ?: "")
+    }
+    private fun debug(message: String) {
+        if (BuildConfig.DEBUG) {
+            print(message)
+        }
     }
 }
