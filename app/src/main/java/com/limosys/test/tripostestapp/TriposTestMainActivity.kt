@@ -38,9 +38,10 @@ class TriposTestMainActivity : BaseActivity() {
         this.sharedVtp = triPOSMobileSDK.getSharedVtp()
         super.onCreate(savedInstanceState)
         setContent {
-            TriposTestAppTheme {
-                MainContent()
-            }
+//            TriposTestAppTheme {
+//                MainContent()
+//            }
+            AppEntryPoint()
         }
     }
 
