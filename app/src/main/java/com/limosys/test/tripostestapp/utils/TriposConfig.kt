@@ -1,5 +1,8 @@
 package com.limosys.test.tripostestapp.utils
 
+import android.content.Context
+import android.content.Context.WIFI_SERVICE
+import android.net.wifi.WifiManager
 import com.vantiv.triposmobilesdk.*
 import com.vantiv.triposmobilesdk.enums.AddressVerificationCondition
 import com.vantiv.triposmobilesdk.enums.ApplicationMode
@@ -9,6 +12,9 @@ import com.vantiv.triposmobilesdk.express.Application
 import com.vantiv.triposmobilesdk.express.Credentials
 import com.vantiv.triposmobilesdk.utilities.BluetoothConfiguration
 import java.math.BigDecimal
+import java.net.InetAddress
+import java.net.NetworkInterface
+import java.util.*
 
 
 object TriposConfig {
@@ -64,11 +70,46 @@ object TriposConfig {
 
         // TCP/IP configuration
         val tcpIpConfiguration = TcpIpConfiguration()
-        tcpIpConfiguration.ipAddress = "192.168.1.14"
+        tcpIpConfiguration.ipAddress = getIPAddress(true)
         tcpIpConfiguration.port = 12000
         deviceConfig.tcpIpConfiguration = tcpIpConfiguration
 
         this.sharedConfig.deviceConfiguration = this.deviceConfig
+    }
+    fun getIPAddress(useIPv4: Boolean): String {
+        try {
+            val interfaces: List<NetworkInterface> =
+                Collections.list(NetworkInterface.getNetworkInterfaces())
+            for (intf in interfaces) {
+                val addrs: List<InetAddress> = Collections.list(intf.getInetAddresses())
+                for (addr in addrs) {
+                    if (!addr.isLoopbackAddress) {
+                        val sAddr: String = addr.hostAddress as String
+                        val isIPv4 = sAddr.indexOf(':') < 0
+                        if (useIPv4) {
+                            if (isIPv4) return sAddr
+                        } else {
+                            if (!isIPv4) {
+                                val delim = sAddr.indexOf('%')
+                                return if (delim < 0) sAddr.uppercase(Locale.getDefault()) else sAddr.substring(
+                                    0,
+                                    delim
+                                ).uppercase(
+                                    Locale.getDefault()
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (ex: Exception) {}
+        return ""
+    }
+    fun getWifiIPAddress(context: Context): String? {
+        val wifiMgr = context.applicationContext.getSystemService(WIFI_SERVICE) as WifiManager?
+        val wifiInfo = wifiMgr!!.connectionInfo
+        val ip = wifiInfo.ipAddress
+        return android.text.format.Formatter.formatIpAddress(ip)
     }
     private fun setupTransactionConfiguration() {
         this.transactionConfig = TransactionConfiguration()
