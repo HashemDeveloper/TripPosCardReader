@@ -1,11 +1,6 @@
 package com.limosys.test.tripostestapp.utils
 
-import com.vantiv.triposmobilesdk.ApplicationConfiguration
-import com.vantiv.triposmobilesdk.BuildConfig
-import com.vantiv.triposmobilesdk.Configuration
-import com.vantiv.triposmobilesdk.DeviceConfiguration
-import com.vantiv.triposmobilesdk.HostConfiguration
-import com.vantiv.triposmobilesdk.TransactionConfiguration
+import com.vantiv.triposmobilesdk.*
 import com.vantiv.triposmobilesdk.enums.AddressVerificationCondition
 import com.vantiv.triposmobilesdk.enums.ApplicationMode
 import com.vantiv.triposmobilesdk.enums.DeviceType
@@ -14,6 +9,7 @@ import com.vantiv.triposmobilesdk.express.Application
 import com.vantiv.triposmobilesdk.express.Credentials
 import com.vantiv.triposmobilesdk.utilities.BluetoothConfiguration
 import java.math.BigDecimal
+
 
 object TriposConfig {
     private lateinit var sharedConfig: Configuration
@@ -65,6 +61,13 @@ object TriposConfig {
 
         val bluetoothConfiguration = BluetoothConfiguration()
         this.deviceConfig.bluetoothConfiguration = bluetoothConfiguration
+
+        // TCP/IP configuration
+        val tcpIpConfiguration = TcpIpConfiguration()
+        tcpIpConfiguration.ipAddress = "192.168.1.14"
+        tcpIpConfiguration.port = 12000
+        deviceConfig.tcpIpConfiguration = tcpIpConfiguration
+
         this.sharedConfig.deviceConfiguration = this.deviceConfig
     }
     private fun setupTransactionConfiguration() {

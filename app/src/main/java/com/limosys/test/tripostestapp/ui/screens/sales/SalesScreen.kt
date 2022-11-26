@@ -11,15 +11,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import com.limosys.test.tripostestapp.R
+import com.limosys.test.tripostestapp.ui.screens.states.SalesState
+import com.vantiv.triposmobilesdk.CardData
 
 @Composable
-fun SalesScreen(navController: NavHostController) {
+fun SalesScreen(
+    navController: NavHostController,
+    state: SalesState,
+    handleEvent: (SalesState) -> Unit
+) {
     Surface(modifier = Modifier.fillMaxSize()) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(text = stringResource(id = R.string.swipe_or_tap))
+            SalesStatus(state, handleEvent)
         }
+    }
+}
+
+@Composable
+fun SalesStatus(state: SalesState, handleEvent: (SalesState) -> Unit) {
+    when (state) {
+        is SalesState.None -> {
+            Text(text = stringResource(id = R.string.swipe_or_tap))
+            handleEvent(SalesState.SwipeOrTap)
+        }
+        is SalesState.Swiped -> {
+            val data: CardData? = state.name
+            data?.entryMode?.name?.let { Text(text = it) }
+        }
+        else -> {}
     }
 }
