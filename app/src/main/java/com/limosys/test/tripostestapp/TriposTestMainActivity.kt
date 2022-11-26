@@ -23,6 +23,7 @@ import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.limosys.test.tripostestapp.base.BaseActivity
+import com.limosys.test.tripostestapp.ui.navigation.TriposNavigation
 import com.limosys.test.tripostestapp.ui.theme.TriposTestAppTheme
 import com.limosys.test.tripostestapp.utils.TriposConfig
 import com.vantiv.triposmobilesdk.VTP
@@ -159,5 +160,17 @@ class TriposTestMainActivity : BaseActivity() {
     @Preview(showSystemUi = true)
     fun DefaultPreview() {
         MainContent()
+    }
+}
+
+@Composable
+fun AppEntryPoint() {
+    TriposTestAppTheme {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colors.background
+        ) {
+            TriposNavigation()
+        }
     }
 }
