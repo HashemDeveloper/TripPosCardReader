@@ -45,7 +45,7 @@ class InitializationViewModel @Inject constructor(application: Application): And
                     if (BuildConfig.DEBUG) {
                         print(e.message)
                     }
-                    _initializationState.value = InitializationState.SdkInitializationException(e.message)
+                    _initializationState.value = InitializationState.SdkInitializationException(e.message ?: "")
                 }
             }
         }
