@@ -22,6 +22,7 @@ import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.limosys.test.tripostestapp.R
 import com.limosys.test.tripostestapp.component.MessageHandler
+import com.limosys.test.tripostestapp.ui.routes.AppRoutes
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.utils.MessageState
 
@@ -32,14 +33,16 @@ fun InitializationScreen(
     state: InitializationState,
     handleEvent: (InitializationState) -> Unit
 ) {
-    MainContent(state) {
+    MainContent(state, onConnected = {
+        navController.navigate(AppRoutes.SALES_SCREEN.name)
+    }) {
         handleEvent.invoke(InitializationState.InitializeSdk)
     }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun MainContent(state: InitializationState, handleEvent: () -> Unit) {
+fun MainContent(state: InitializationState,onConnected: () -> Unit, handleEvent: () -> Unit) {
     val permissionsToCheck = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         rememberMultiplePermissionsState(
             permissions = listOf(
@@ -67,7 +70,9 @@ fun MainContent(state: InitializationState, handleEvent: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            DisplayStatus(state)
+            DisplayStatus(state) {
+                onConnected.invoke()
+            }
             InitializeSdkButton(permissionsToCheck) {
                 handleEvent.invoke()
             }
@@ -76,7 +81,7 @@ fun MainContent(state: InitializationState, handleEvent: () -> Unit) {
 }
 
 @Composable
-fun DisplayStatus(state: InitializationState) {
+fun DisplayStatus(state: InitializationState, onConnected: () -> Unit) {
     when (state) {
         is InitializationState.SdkInitializationSuccess -> {
             DisplayMessage(message = stringResource(id = R.string.turn_on_triPOS_bluetooth_device))
@@ -86,7 +91,9 @@ fun DisplayStatus(state: InitializationState) {
             DisplayMessage(message = message)
         }
         is InitializationState.DeviceConnected -> {
-            DisplayMessage(message = stringResource(id = R.string.connected))
+           LaunchedEffect(key1 = true, block = {
+               onConnected.invoke()
+           })
         }
         is InitializationState.DeviceDisconnected -> {
             DisplayMessage(message = stringResource(id = R.string.disconnected))

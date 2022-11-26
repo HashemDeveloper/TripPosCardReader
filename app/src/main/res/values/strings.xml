@@ -6,4 +6,5 @@
     <string name="disconnected">Disconnected</string>
     <string name="turn_on_triPOS_bluetooth_device">Please turn on the triPOS bluetooth device to pair. Note: The passkey can be found behind the device.</string>
     <string name="action_ok">Ok</string>
+    <string name="swipe_or_tap">Swipe or tap your card</string>
 </resources>
