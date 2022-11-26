@@ -20,7 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class SalesViewModel @Inject constructor(application: Application): AndroidViewModel(application), DeviceInteractionListener, CardInputListener {
-    private val sharedVtp: VTP = triPOSMobileSDK.getSharedVtp()
+    private var sharedVtp: VTP = triPOSMobileSDK.getSharedVtp()
     private lateinit var device: Device
     private val _salesState: MutableStateFlow<SalesState> = MutableStateFlow(SalesState.None)
     val salesState: StateFlow<SalesState> = _salesState
@@ -37,6 +37,9 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
                 }
                 initializeCardInputReader()
             }
+            is SalesState.None -> {
+                this._salesState.value = SalesState.None
+            }
             else -> {}
         }
     }
@@ -51,12 +54,14 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
             e.printStackTrace()
         }
     }
+
     override fun onInputTimeout(p0: TimeoutException?) {
         print(p0?.message ?: "")
     }
 
     override fun onCardInputCompleted(data: CardData?) {
         this._salesState.value = SalesState.Swiped(data)
+        initializeCardInputReader()
     }
 
     override fun onCardInputError(p0: Exception?) {
