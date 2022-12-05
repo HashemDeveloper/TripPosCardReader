@@ -7,6 +7,7 @@ import com.vantiv.triposmobilesdk.*
 import com.vantiv.triposmobilesdk.enums.AmountConfirmationType
 import com.vantiv.triposmobilesdk.enums.NumericInputType
 import com.vantiv.triposmobilesdk.enums.SelectionType
+import com.vantiv.triposmobilesdk.enums.TransactionType
 import com.vantiv.triposmobilesdk.exceptions.CardInputEnableException
 import com.vantiv.triposmobilesdk.exceptions.DeviceNotConnectedException
 import com.vantiv.triposmobilesdk.exceptions.DeviceNotInitializedException
@@ -45,7 +46,7 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
     }
     private fun initializeCardInputReader() {
         try {
-            (device as CardInputDevice).enableCardInput(this, this)
+            (device as CardInputDevice).enableCardInput("Tap To Pay", true, true, true, true, true, TransactionType.Sale, BigDecimal(0.5), BigDecimal(0.5), this, this)
         } catch (e: DeviceNotConnectedException) {
             e.printStackTrace()
         } catch (e: DeviceNotInitializedException) {
@@ -61,7 +62,7 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
 
     override fun onCardInputCompleted(data: CardData?) {
         this._salesState.value = SalesState.Swiped(data)
-        initializeCardInputReader()
+        this.device.reset()
     }
 
     override fun onCardInputError(p0: Exception?) {
@@ -73,7 +74,7 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
         p1: BigDecimal?,
         p2: DeviceInteractionListener.ConfirmAmountListener?
     ) {
-        print(p0?.name)
+        print(p0)
     }
 
     override fun onChoiceSelections(
@@ -81,21 +82,18 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
         p1: SelectionType?,
         p2: DeviceInteractionListener.SelectChoiceListener?
     ) {
-        print(p0?.size)
     }
 
     override fun onNumericInput(
         p0: NumericInputType?,
         p1: DeviceInteractionListener.NumericInputListener?
     ) {
-        print(p0?.name)
     }
 
     override fun onSelectApplication(
         p0: Array<out String>?,
         p1: DeviceInteractionListener.SelectChoiceListener?
     ) {
-        print(p0?.size)
     }
 
     override fun onPromptUserForCard(p0: String?) {
