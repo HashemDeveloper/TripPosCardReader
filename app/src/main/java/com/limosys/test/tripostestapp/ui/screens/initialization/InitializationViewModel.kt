@@ -97,6 +97,9 @@ class InitializationViewModel @Inject constructor(application: Application): And
         }
     }
 
+    /**
+     * @param bArray returns list of BBPosDevices
+     */
     override fun onScanRequestCompleted(bArray: ArrayList<String>?) {
         val identifier: String = bArray?.get(0) ?: ""
         initializeSdk(identifier)
