@@ -68,22 +68,27 @@ class InitializationViewModel @Inject constructor(application: Application): And
     }
 
     override fun onConnected(p0: Device?, p1: String?, p2: String?, p3: String?) {
+        debug("Connected")
         this._initializationState.value = InitializationState.DeviceConnected
     }
 
     override fun onDisconnected(p0: Device?) {
+        debug("Disconnected")
         this._initializationState.value = InitializationState.DeviceDisconnected
     }
 
     override fun onError(p0: Exception?) {
+        debug(p0?.message ?: "")
         this._initializationState.value = InitializationState.DeviceConnectionError(p0?.message ?: "")
     }
 
     override fun onBatteryLow() {
+        debug("Battery Low")
         this._initializationState.value = InitializationState.DeviceBatteryLow
     }
 
     override fun onWarning(p0: Exception?) {
+        debug(p0?.message ?: "")
         this._initializationState.value = InitializationState.DeviceWarning(p0?.message ?: "")
     }
     private fun debug(message: String) {
