@@ -25,11 +25,11 @@ object TriposConfig {
     private lateinit var transactionConfig: TransactionConfiguration
 
 
-    fun getSharedConfig(): Configuration {
+    fun getSharedConfig(identifier: String): Configuration {
         this.sharedConfig = Configuration()
         setupApplicationConfiguration()
         setupHostConfiguration()
-        setupDeviceConfiguration()
+        setupDeviceConfiguration(identifier)
         setupTransactionConfiguration()
         return this.sharedConfig
     }
@@ -37,7 +37,7 @@ object TriposConfig {
 
     private fun setupApplicationConfiguration() {
         val config = ApplicationConfiguration()
-        config.idlePrompt = "TriPos Test"
+        config.idlePrompt = "TriposTestApp"
         config.applicationMode = ApplicationMode.TestCertification
         this.sharedConfig.applicationConfiguration = config
     }
@@ -49,7 +49,7 @@ object TriposConfig {
         hostConfig.accountId = this.credentials.accountID
         hostConfig.accountToken = this.credentials.accountToken
 
-        this.app = Application(BuildConfig.LIBRARY_PACKAGE_NAME,"TriposTestApp","0.0")
+        this.app = Application("15018","TriposTestApp","0.0")
         hostConfig.applicationId = this.app.applicationID
         hostConfig.applicationName = this.app.applicationName
         hostConfig.applicationVersion = this.app.applicationVersion
@@ -57,7 +57,7 @@ object TriposConfig {
         this.sharedConfig.hostConfiguration = hostConfig
     }
 
-    private fun setupDeviceConfiguration() {
+    private fun setupDeviceConfiguration(identifier: String) {
         this.deviceConfig = DeviceConfiguration()
         this.deviceConfig.isContactlessAllowed = true
         this.deviceConfig.deviceType = DeviceType.BBPosDevice
@@ -66,6 +66,7 @@ object TriposConfig {
         this.deviceConfig.terminalType = TerminalType.Mobile
 
         val bluetoothConfiguration = BluetoothConfiguration()
+        bluetoothConfiguration.identifier = identifier
         this.deviceConfig.bluetoothConfiguration = bluetoothConfiguration
 
         // TCP/IP configuration

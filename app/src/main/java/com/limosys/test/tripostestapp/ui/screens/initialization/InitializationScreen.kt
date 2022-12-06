@@ -35,7 +35,7 @@ fun InitializationScreen(
     MainContent(state, onConnected = {
         navController.navigate(AppRoutes.SALES_SCREEN.name)
     }) {
-        handleEvent.invoke(InitializationState.InitializeSdk)
+        handleEvent.invoke(InitializationState.ScanBlueTooth)
     }
 }
 
@@ -82,8 +82,17 @@ fun MainContent(state: InitializationState,onConnected: () -> Unit, handleEvent:
 @Composable
 fun DisplayStatus(state: InitializationState, onConnected: () -> Unit) {
     when (state) {
-        is InitializationState.SdkInitializationSuccess -> {
+        is InitializationState.BlueToothScanInitialized -> {
             DisplayMessage(message = stringResource(id = R.string.turn_on_triPOS_bluetooth_device))
+        }
+        is InitializationState.BluetoothScanRequestError -> {
+            val message: String = state.errorMessage
+            DisplayMessage(message = message)
+        }
+        is InitializationState.SdkInitializationSuccess -> {
+            val identifier: String = state.deviceIdentifier
+            val message = "Please wait while connecting to $identifier"
+            DisplayMessage(message = message)
         }
         is InitializationState.SdkInitializationException -> {
             val message = state.message
