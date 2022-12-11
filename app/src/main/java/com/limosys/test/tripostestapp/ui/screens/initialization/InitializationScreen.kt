@@ -21,6 +21,8 @@ import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.limosys.test.tripostestapp.R
+import com.limosys.test.tripostestapp.component.DebugButton
+import com.limosys.test.tripostestapp.component.DisplayDebugList
 import com.limosys.test.tripostestapp.component.MessageHandler
 import com.limosys.test.tripostestapp.component.StandardDivider
 import com.limosys.test.tripostestapp.component.styles.Spacing
@@ -79,17 +81,7 @@ fun MainContent(
         modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background
     ) {
         if (displayDebug) {
-            Box(modifier = Modifier
-                .fillMaxWidth()
-                .padding(Spacing.TINY_8.space)) {
-                LazyColumn(modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopStart),content = {
-                    items(items = detailList) {value ->
-                        Text(text = value)
-                    }
-                })
-            }
+            DisplayDebugList(detailList)
             StandardDivider()
         }
         Column(
@@ -104,7 +96,7 @@ fun MainContent(
                 handleEvent.invoke()
             }
         }
-        DisplayDetailsButton {
+        DebugButton {
             displayDebug = true
         }
     }
@@ -173,20 +165,6 @@ private fun InitializeSdkButton(permissionsToCheck: MultiplePermissionsState, ha
     }
 }
 
-@Composable
-private fun DisplayDetailsButton(onDebugClicked: () -> Unit) {
-    Box(modifier = Modifier
-        .fillMaxWidth()
-        .padding(Spacing.TINY_8.space)) {
-        Button(modifier = Modifier
-            .fillMaxWidth()
-            .align(Alignment.BottomCenter) , onClick = {
-            onDebugClicked.invoke()
-        }) {
-            Text(text = "Debug")
-        }
-    }
-}
 @OptIn(ExperimentalPermissionsApi::class)
 private fun getTextToShowGivenPermissions(
     permissions: List<PermissionState>, shouldShowRationale: Boolean

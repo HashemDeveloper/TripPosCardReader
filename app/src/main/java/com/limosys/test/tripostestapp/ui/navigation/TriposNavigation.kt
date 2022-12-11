@@ -27,7 +27,7 @@ fun TriposNavigation() {
         composable(route = AppRoutes.SALES_SCREEN.name) {
             val viewModel: SalesViewModel = hiltViewModel()
             val state: SalesState = viewModel.salesState.collectAsState().value
-            SalesScreen(navController = navController, state, viewModel::handleEvent)
+            SalesScreen(navController = navController, state, viewModel::handleEvent, viewModel.showDetails)
         }
     }
 }
