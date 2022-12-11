@@ -29,25 +29,38 @@ class InitializationViewModel @Inject constructor(application: Application): And
     private val _initializationState: MutableStateFlow<InitializationState> = MutableStateFlow(InitializationState.None)
     val initializationState: StateFlow<InitializationState> = _initializationState
 
+    private val _showDetails: MutableStateFlow<MutableList<String>> = MutableStateFlow(arrayListOf())
+    val showDetails: StateFlow<MutableList<String>> = _showDetails
+
+    private val detailList: MutableList<String> = arrayListOf()
+
     fun handleEvents(state: InitializationState) {
         when (state) {
             is InitializationState.ScanBlueTooth -> {
                 scanBluetooth()
             }
+            is InitializationState.DebugClicked -> {
+                this._initializationState.value = InitializationState.DisplayDetails(this.detailList)
+            }
             else -> {}
         }
     }
-
+    private fun addToList(message: String) {
+        this.detailList.add(message)
+        this._showDetails.value = this@InitializationViewModel.detailList
+    }
     private fun scanBluetooth() {
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 this@InitializationViewModel.sharedVtp.scanBluetoothDevicesWithConfiguration(getApplication() as Context, TriposConfig.getSharedConfig(""), this@InitializationViewModel)
                 _initializationState.value = InitializationState.BlueToothScanInitialized
+                addToList("Scanning Bluetooth...")
             } catch (e: Exception) {
                 if (BuildConfig.DEBUG) {
                     print(e.message)
                 }
                 _initializationState.value = InitializationState.SdkInitializationException(e.message ?: "")
+                addToList("Error scanning. Exception (${e.message})")
             }
         }
     }
@@ -57,11 +70,13 @@ class InitializationViewModel @Inject constructor(application: Application): And
                 try {
                     sharedVtp.initialize(getApplication() as Context, TriposConfig.getSharedConfig(identifier), this@InitializationViewModel)
                     _initializationState.value = InitializationState.SdkInitializationSuccess(identifier)
+                    addToList("Finished Initializing SDK")
                 } catch (e: Exception) {
                     if (BuildConfig.DEBUG) {
                         print(e.message)
                     }
                     _initializationState.value = InitializationState.SdkInitializationException(e.message ?: "")
+                    addToList("Error Initializing SDK. Exception: (${e.message})")
                 }
             }
         }
@@ -69,27 +84,32 @@ class InitializationViewModel @Inject constructor(application: Application): And
 
     override fun onConnected(p0: Device?, p1: String?, p2: String?, p3: String?) {
         debug("Connected")
+        addToList("Connected")
         this._initializationState.value = InitializationState.DeviceConnected
     }
 
     override fun onDisconnected(p0: Device?) {
         debug("Disconnected")
+        addToList("Disconnected")
         this._initializationState.value = InitializationState.DeviceDisconnected
     }
 
     override fun onError(p0: Exception?) {
         debug(p0?.message ?: "")
         this._initializationState.value = InitializationState.DeviceConnectionError(p0?.message ?: "")
+        addToList("Error connecting to Device. Details: (${p0?.message})")
     }
 
     override fun onBatteryLow() {
         debug("Battery Low")
         this._initializationState.value = InitializationState.DeviceBatteryLow
+        addToList("Battery Low...")
     }
 
     override fun onWarning(p0: Exception?) {
         debug(p0?.message ?: "")
         this._initializationState.value = InitializationState.DeviceWarning(p0?.message ?: "")
+        addToList("Warning: Issue: (${p0?.message})")
     }
     private fun debug(message: String) {
         if (BuildConfig.DEBUG) {
@@ -102,6 +122,7 @@ class InitializationViewModel @Inject constructor(application: Application): And
      */
     override fun onScanRequestCompleted(bArray: ArrayList<String>?) {
         val identifier: String = bArray?.get(0) ?: ""
+        addToList("Initializing SDK...")
         initializeSdk(identifier)
     }
 

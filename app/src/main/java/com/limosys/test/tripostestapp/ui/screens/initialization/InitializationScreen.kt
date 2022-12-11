@@ -2,14 +2,15 @@ package com.limosys.test.tripostestapp.ui.screens.initialization
 
 import android.Manifest
 import android.os.Build
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -21,27 +22,37 @@ import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.limosys.test.tripostestapp.R
 import com.limosys.test.tripostestapp.component.MessageHandler
+import com.limosys.test.tripostestapp.component.StandardDivider
+import com.limosys.test.tripostestapp.component.styles.Spacing
 import com.limosys.test.tripostestapp.ui.routes.AppRoutes
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.utils.MessageState
+import kotlinx.coroutines.flow.StateFlow
 
 
 @Composable
 fun InitializationScreen(
     navController: NavHostController,
     state: InitializationState,
-    handleEvent: (InitializationState) -> Unit
+    handleEvent: (InitializationState) -> Unit,
+    showDetails: StateFlow<MutableList<String>>
 ) {
+    val detailList: MutableList<String> = showDetails.collectAsState().value
     MainContent(state, onConnected = {
         navController.navigate(AppRoutes.SALES_SCREEN.name)
-    }) {
+    }, detailList,) {
         handleEvent.invoke(InitializationState.ScanBlueTooth)
     }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-fun MainContent(state: InitializationState,onConnected: () -> Unit, handleEvent: () -> Unit) {
+fun MainContent(
+    state: InitializationState,
+    onConnected: () -> Unit,
+    detailList: MutableList<String>,
+    handleEvent: () -> Unit
+) {
     val permissionsToCheck = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         rememberMultiplePermissionsState(
             permissions = listOf(
@@ -61,9 +72,26 @@ fun MainContent(state: InitializationState,onConnected: () -> Unit, handleEvent:
             )
         )
     }
+    var displayDebug by rememberSaveable {
+        mutableStateOf(false)
+    }
     Surface(
         modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background
     ) {
+        if (displayDebug) {
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.TINY_8.space)) {
+                LazyColumn(modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopStart),content = {
+                    items(items = detailList) {value ->
+                        Text(text = value)
+                    }
+                })
+            }
+            StandardDivider()
+        }
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -75,6 +103,9 @@ fun MainContent(state: InitializationState,onConnected: () -> Unit, handleEvent:
             InitializeSdkButton(permissionsToCheck) {
                 handleEvent.invoke()
             }
+        }
+        DisplayDetailsButton {
+            displayDebug = true
         }
     }
 }
@@ -142,6 +173,20 @@ private fun InitializeSdkButton(permissionsToCheck: MultiplePermissionsState, ha
     }
 }
 
+@Composable
+private fun DisplayDetailsButton(onDebugClicked: () -> Unit) {
+    Box(modifier = Modifier
+        .fillMaxWidth()
+        .padding(Spacing.TINY_8.space)) {
+        Button(modifier = Modifier
+            .fillMaxWidth()
+            .align(Alignment.BottomCenter) , onClick = {
+            onDebugClicked.invoke()
+        }) {
+            Text(text = "Debug")
+        }
+    }
+}
 @OptIn(ExperimentalPermissionsApi::class)
 private fun getTextToShowGivenPermissions(
     permissions: List<PermissionState>, shouldShowRationale: Boolean
