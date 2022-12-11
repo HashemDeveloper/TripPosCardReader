@@ -2,6 +2,7 @@ package com.limosys.test.tripostestapp.ui.screens.sales
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import com.limosys.test.tripostestapp.ui.screens.states.DebugState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
 import com.vantiv.triposmobilesdk.*
 import com.vantiv.triposmobilesdk.enums.AmountConfirmationType
@@ -9,6 +10,7 @@ import com.vantiv.triposmobilesdk.enums.NumericInputType
 import com.vantiv.triposmobilesdk.enums.SelectionType
 import com.vantiv.triposmobilesdk.enums.TransactionType
 import com.vantiv.triposmobilesdk.exceptions.CardInputEnableException
+import com.vantiv.triposmobilesdk.exceptions.DeviceEmvChipErrorException
 import com.vantiv.triposmobilesdk.exceptions.DeviceNotConnectedException
 import com.vantiv.triposmobilesdk.exceptions.DeviceNotInitializedException
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -25,15 +27,16 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
     private lateinit var device: Device
     private val _salesState: MutableStateFlow<SalesState> = MutableStateFlow(SalesState.None)
     val salesState: StateFlow<SalesState> = _salesState
-    private val _showDetails: MutableStateFlow<MutableList<String>> = MutableStateFlow(arrayListOf())
-    val showDetails: StateFlow<MutableList<String>> = _showDetails
+
+    private val _debugState: MutableStateFlow<DebugState> = MutableStateFlow(DebugState.None)
+    val debugState: StateFlow<DebugState> = _debugState
 
     private val detailList: MutableList<String> = arrayListOf()
 
 
     private fun addToList(message: String) {
         this.detailList.add(message)
-        this._showDetails.value = this@SalesViewModel.detailList
+        this._debugState.value = DebugState.DebugList(this.detailList)
     }
 
     fun handleEvent(state: SalesState) {
@@ -59,7 +62,8 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
     private fun initializeCardInputReader() {
         try {
             addToList("Enabling Card Input Listeners...")
-            (device as CardInputDevice).enableCardInput("Tap To Pay", true, true, true, true, true, TransactionType.Sale, BigDecimal(0.5), BigDecimal(0.5), this, this)
+//            (device as CardInputDevice).enableCardInput(this, this)
+            (device as CardInputDevice).enableCardInput("Tap To Pay", false, false, true, true, true, TransactionType.Sale, BigDecimal(0.5), BigDecimal(0.5), this, this)
         } catch (e: DeviceNotConnectedException) {
             addToList(e.message ?: "")
             e.printStackTrace()
@@ -86,7 +90,6 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
     override fun onCardInputError(p0: Exception?) {
         print(p0?.message ?: "")
         addToList(p0?.message ?: "")
-        this.device.reset()
     }
 
     override fun onAmountConfirmation(
@@ -94,6 +97,7 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
         p1: BigDecimal?,
         p2: DeviceInteractionListener.ConfirmAmountListener?
     ) {
+        p2?.confirmAmount(true)
         addToList("Amount Confirmation Type: ${type?.name}\nAmount:$p1")
     }
 
@@ -115,15 +119,15 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
         p0: Array<out String>?,
         p1: DeviceInteractionListener.SelectChoiceListener?
     ) {
+        print(p0)
     }
 
     override fun onPromptUserForCard(p0: String?) {
-        print(p0)
-        p0?.let { addToList(it) }
+        addToList(p0 ?: "")
     }
 
     override fun onDisplayText(p0: String?) {
-        print(p0)
+        addToList(p0 ?: "")
     }
 
     override fun onRemoveCard() {
@@ -134,5 +138,6 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
     override fun onCardRemoved() {
         print("Card removed!")
         addToList("Card removed")
+        this.device.reset()
     }
 }

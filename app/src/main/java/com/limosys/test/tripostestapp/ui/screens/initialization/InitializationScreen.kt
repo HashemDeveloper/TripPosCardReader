@@ -1,6 +1,7 @@
 package com.limosys.test.tripostestapp.ui.screens.initialization
 
 import android.Manifest
+import android.app.Activity
 import android.os.Build
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -13,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.navigation.NavHostController
@@ -81,7 +83,7 @@ fun MainContent(
         modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background
     ) {
         if (displayDebug) {
-            DisplayDebugList(detailList)
+            DebugList(detailList)
             StandardDivider()
         }
         Column(
@@ -96,12 +98,21 @@ fun MainContent(
                 handleEvent.invoke()
             }
         }
-        DebugButton {
+        DisplayDebugButton {
             displayDebug = true
         }
     }
 }
-
+@Composable
+private fun DebugList(list: MutableList<String>) {
+    DisplayDebugList(detailList = list)
+}
+@Composable
+private fun DisplayDebugButton(onDebugClicked: () -> Unit) {
+    DebugButton {
+       onDebugClicked.invoke()
+    }
+}
 @Composable
 fun DisplayStatus(state: InitializationState, onConnected: () -> Unit) {
     when (state) {
@@ -131,7 +142,14 @@ fun DisplayStatus(state: InitializationState, onConnected: () -> Unit) {
         }
         is InitializationState.DeviceConnectionError -> {
             val message: String = state.errorMessage
-            DisplayMessage(message = message)
+            val activity = LocalContext.current as Activity
+
+            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                DisplayMessage(message = message)
+                RetryButton {
+                    activity.recreate()
+                }
+            }
         }
         is InitializationState.DeviceBatteryLow -> {
             MessageHandler(state = MessageState.WARNING(stringResource(id = R.string.battery_low)))
@@ -146,6 +164,13 @@ fun DisplayStatus(state: InitializationState, onConnected: () -> Unit) {
 @Composable
 private fun DisplayMessage(message: String) {
     Text(text = message, textAlign = TextAlign.Center)
+}
+
+@Composable
+private fun RetryButton(onRetryClicked: () -> Unit) {
+    Button(onClick = { onRetryClicked.invoke() }) {
+        Text(text = "Retry")
+    }
 }
 
 @OptIn(ExperimentalPermissionsApi::class)

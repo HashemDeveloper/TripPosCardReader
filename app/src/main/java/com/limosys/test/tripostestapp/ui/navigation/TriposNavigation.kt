@@ -11,6 +11,7 @@ import com.limosys.test.tripostestapp.ui.screens.initialization.InitializationSc
 import com.limosys.test.tripostestapp.ui.screens.sales.SalesScreen
 import com.limosys.test.tripostestapp.ui.screens.initialization.InitializationViewModel
 import com.limosys.test.tripostestapp.ui.screens.sales.SalesViewModel
+import com.limosys.test.tripostestapp.ui.screens.states.DebugState
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
 
@@ -27,7 +28,8 @@ fun TriposNavigation() {
         composable(route = AppRoutes.SALES_SCREEN.name) {
             val viewModel: SalesViewModel = hiltViewModel()
             val state: SalesState = viewModel.salesState.collectAsState().value
-            SalesScreen(navController = navController, state, viewModel::handleEvent, viewModel.showDetails)
+            val debugState: DebugState = viewModel.debugState.collectAsState().value
+            SalesScreen(navController = navController, state, viewModel::handleEvent, debugState)
         }
     }
 }

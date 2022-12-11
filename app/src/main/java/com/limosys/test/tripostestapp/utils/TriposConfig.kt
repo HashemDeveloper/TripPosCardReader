@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Context.WIFI_SERVICE
 import android.net.wifi.WifiManager
 import com.vantiv.triposmobilesdk.*
+import com.vantiv.triposmobilesdk.emv.EmvContactlessConfiguration
 import com.vantiv.triposmobilesdk.enums.AddressVerificationCondition
 import com.vantiv.triposmobilesdk.enums.ApplicationMode
 import com.vantiv.triposmobilesdk.enums.DeviceType
@@ -23,7 +24,7 @@ object TriposConfig {
     private lateinit var app: Application
     private lateinit var deviceConfig: DeviceConfiguration
     private lateinit var transactionConfig: TransactionConfiguration
-
+    private lateinit var emvConfiguration: EmvConfiguration
 
     fun getSharedConfig(identifier: String): Configuration {
         this.sharedConfig = Configuration()
@@ -38,7 +39,7 @@ object TriposConfig {
     private fun setupApplicationConfiguration() {
         val config = ApplicationConfiguration()
         config.idlePrompt = "TriposTestApp"
-        config.applicationMode = ApplicationMode.TestCertification
+        config.applicationMode = ApplicationMode.Production
         this.sharedConfig.applicationConfiguration = config
     }
 
@@ -62,6 +63,7 @@ object TriposConfig {
         this.deviceConfig.isContactlessAllowed = true
         this.deviceConfig.deviceType = DeviceType.BBPosDevice
         this.deviceConfig.isKeyedEntryAllowed = true
+
         this.deviceConfig.terminalId = "1234"
         this.deviceConfig.terminalType = TerminalType.Mobile
 
@@ -117,8 +119,16 @@ object TriposConfig {
         this.transactionConfig.addressVerificationCondition = AddressVerificationCondition.Keyed
         this.transactionConfig.isAmountConfirmationEnabled = true
         this.transactionConfig.isDebitAllowed = true
+        this.transactionConfig.isEmvAllowed = true
+        this.transactionConfig.isQuickChipAllowed = true
         this.transactionConfig.isCashbackAllowed = true
         this.transactionConfig.preReadQuickChipPlaceHolderAmount = BigDecimal.ONE;
         this.sharedConfig.transactionConfiguration = this.transactionConfig
+    }
+
+    private fun setupEMVConfiguration() {
+        this.emvConfiguration = EmvConfiguration()
+        this.emvConfiguration.isAutoSelectApplicationEnabled = true
+        this.sharedConfig.emvConfiguration = this.emvConfiguration
     }
 }
