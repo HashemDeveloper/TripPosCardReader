@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.utils.TriposConfig
+import com.limosys.test.tripostestapp.utils.isBluetoothEnabled
 import com.vantiv.triposmobilesdk.BluetoothScanRequestListener
 import com.vantiv.triposmobilesdk.BuildConfig
 import com.vantiv.triposmobilesdk.Device
@@ -37,7 +38,11 @@ class InitializationViewModel @Inject constructor(application: Application): And
     fun handleEvents(state: InitializationState) {
         when (state) {
             is InitializationState.ScanBlueTooth -> {
-                scanBluetooth()
+                if (isBluetoothEnabled(getApplication())) {
+                    scanBluetooth()
+                } else {
+                    this._initializationState.value = InitializationState.EnableBlueTooth
+                }
             }
             is InitializationState.DebugClicked -> {
                 this._initializationState.value = InitializationState.DisplayDetails(this.detailList)
@@ -124,6 +129,7 @@ class InitializationViewModel @Inject constructor(application: Application): And
         val identifier: String = bArray?.get(0) ?: ""
         addToList("Initializing SDK...")
         initializeSdk(identifier)
+        //TODO: Send event to initialize SDK
     }
 
     override fun onScanRequestError(p0: Exception?) {

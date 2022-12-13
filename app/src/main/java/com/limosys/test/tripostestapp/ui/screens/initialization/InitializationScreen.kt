@@ -2,10 +2,14 @@ package com.limosys.test.tripostestapp.ui.screens.initialization
 
 import android.Manifest
 import android.app.Activity
+import android.bluetooth.BluetoothAdapter
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
+import android.provider.Settings
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -17,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.MultiplePermissionsState
@@ -27,10 +32,10 @@ import com.limosys.test.tripostestapp.component.DebugButton
 import com.limosys.test.tripostestapp.component.DisplayDebugList
 import com.limosys.test.tripostestapp.component.MessageHandler
 import com.limosys.test.tripostestapp.component.StandardDivider
-import com.limosys.test.tripostestapp.component.styles.Spacing
 import com.limosys.test.tripostestapp.ui.routes.AppRoutes
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.utils.MessageState
+import com.limosys.test.tripostestapp.utils.isBluetoothEnabled
 import kotlinx.coroutines.flow.StateFlow
 
 
@@ -42,9 +47,29 @@ fun InitializationScreen(
     showDetails: StateFlow<MutableList<String>>
 ) {
     val detailList: MutableList<String> = showDetails.collectAsState().value
-    MainContent(state, onConnected = {
-        navController.navigate(AppRoutes.SALES_SCREEN.name)
-    }, detailList,) {
+    val context: Context = LocalContext.current
+    val intentFilter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+    var buttonText by rememberSaveable {
+        mutableStateOf("")
+    }
+    context.registerReceiver(broadCastReceiver { bluetoothState ->
+        when (bluetoothState) {
+            BluetoothAdapter.STATE_OFF -> {
+                buttonText = "Turn Bluetooth On"
+            }
+            BluetoothAdapter.STATE_ON -> {
+                buttonText = "Scan"
+            }
+        }
+    }, intentFilter)
+    MainContent(
+        state,
+        buttonText,
+        onConnected = {
+            navController.navigate(AppRoutes.SALES_SCREEN.name)
+        },
+        detailList,
+    ) {
         handleEvent.invoke(InitializationState.ScanBlueTooth)
     }
 }
@@ -53,6 +78,7 @@ fun InitializationScreen(
 @Composable
 fun MainContent(
     state: InitializationState,
+    buttonText: String,
     onConnected: () -> Unit,
     detailList: MutableList<String>,
     handleEvent: () -> Unit
@@ -94,7 +120,7 @@ fun MainContent(
             DisplayStatus(state) {
                 onConnected.invoke()
             }
-            InitializeSdkButton(permissionsToCheck) {
+            InitializeSdkButton(buttonText, permissionsToCheck) {
                 handleEvent.invoke()
             }
         }
@@ -158,9 +184,21 @@ fun DisplayStatus(state: InitializationState, onConnected: () -> Unit) {
             val warning: String = state.warningMessage
             MessageHandler(state = MessageState.WARNING(warning))
         }
+        is InitializationState.EnableBlueTooth -> {
+            NavigateToBluetoothSettings()
+        }
         else -> {}
     }
 }
+
+@Composable
+private fun NavigateToBluetoothSettings() {
+    val context: Context = LocalContext.current
+    val intentOpenBluetoothSettings = Intent()
+    intentOpenBluetoothSettings.action = Settings.ACTION_BLUETOOTH_SETTINGS
+    context.startActivity(intentOpenBluetoothSettings)
+}
+
 @Composable
 private fun DisplayMessage(message: String) {
     Text(text = message, textAlign = TextAlign.Center)
@@ -175,9 +213,13 @@ private fun RetryButton(onRetryClicked: () -> Unit) {
 
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
-private fun InitializeSdkButton(permissionsToCheck: MultiplePermissionsState, handleEvent: () -> Unit) {
+private fun InitializeSdkButton(buttonText: String, permissionsToCheck: MultiplePermissionsState, handleEvent: () -> Unit) {
     if (permissionsToCheck.allPermissionsGranted) {
-        handleEvent.invoke()
+        //TODO: Check if Bluetooth is enabled
+        // if not prompt them to enable bluetooth
+        DisplayActionButton(buttonText.ifEmpty { getTitle() }) {
+            handleEvent.invoke()
+        }
     } else {
         getTextToShowGivenPermissions(
             permissionsToCheck.revokedPermissions, permissionsToCheck.shouldShowRationale
@@ -187,6 +229,19 @@ private fun InitializeSdkButton(permissionsToCheck: MultiplePermissionsState, ha
         }) {
             Text(text = "Request Permission")
         }
+    }
+}
+@Composable
+private fun getTitle(): String {
+    val context: Context = LocalContext.current
+    return if (isBluetoothEnabled(context)) return "Scan" else "Turn Bluetooth On"
+}
+@Composable
+private fun DisplayActionButton(title: String, onClicked: () -> Unit) {
+    Button(onClick = {
+        onClicked.invoke()
+    }) {
+        Text(text = title)
     }
 }
 
@@ -224,4 +279,27 @@ private fun getTextToShowGivenPermissions(
         }
     )
     return textToShow.toString()
+}
+fun broadCastReceiver(onStateChanged: (Int) -> Unit): BroadcastReceiver = object : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val action = intent.action
+        if (action == BluetoothAdapter.ACTION_STATE_CHANGED) {
+            val state = intent.getIntExtra(
+                BluetoothAdapter.EXTRA_STATE,
+                BluetoothAdapter.ERROR
+            )
+            onStateChanged.invoke(state)
+        }
+    }
+}
+
+@Preview
+@Composable
+fun DisplayPreview() {
+    MainContent(state = InitializationState.None,
+        "",
+        onConnected = {},
+        detailList = arrayListOf()) {
+
+    }
 }

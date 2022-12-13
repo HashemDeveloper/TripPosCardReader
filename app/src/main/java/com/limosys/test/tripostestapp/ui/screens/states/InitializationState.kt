@@ -16,4 +16,5 @@ sealed class InitializationState {
     object ScanBlueTooth : InitializationState()
     object BlueToothScanInitialized : InitializationState()
     object DebugClicked : InitializationState()
+    object EnableBlueTooth : InitializationState()
 }
