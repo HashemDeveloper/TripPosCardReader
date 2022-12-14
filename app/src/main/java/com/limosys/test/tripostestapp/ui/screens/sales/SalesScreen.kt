@@ -1,21 +1,29 @@
 package com.limosys.test.tripostestapp.ui.screens.sales
 
+import android.bluetooth.BluetoothAdapter
+import android.content.Context
+import android.content.IntentFilter
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.Button
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import com.limosys.test.tripostestapp.R
 import com.limosys.test.tripostestapp.component.DebugButton
 import com.limosys.test.tripostestapp.component.DisplayDebugList
 import com.limosys.test.tripostestapp.ui.screens.states.DebugState
+import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
+import com.limosys.test.tripostestapp.utils.*
 import com.vantiv.triposmobilesdk.CardData
 import kotlinx.coroutines.delay
+import org.intellij.lang.annotations.Identifier
 
 @Composable
 fun SalesScreen(
@@ -23,9 +31,13 @@ fun SalesScreen(
     state: SalesState,
     handleEvent: (SalesState) -> Unit,
     debugState: DebugState,
+    initializationState: InitializationState
 ) {
     var isDebugClicked by rememberSaveable {
         mutableStateOf(false)
+    }
+    SetupBroadCastListener{
+
     }
     Surface(modifier = Modifier.fillMaxSize()) {
         if (isDebugClicked) {
@@ -35,13 +47,32 @@ fun SalesScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            SalesStatus(state, handleEvent)
+            SalesStatus(state, handleEvent, initializationState) {
+                navController.popBackStack()
+            }
         }
         DisplayDebugButton {
             isDebugClicked = true
         }
     }
 }
+
+@Composable
+private fun SetupBroadCastListener(onBlueToothStateChanged: (String) -> Unit) {
+    val context: Context = LocalContext.current
+    val intentFilter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+    context.registerReceiver(broadCastReceiver {bluetoothState ->
+        when (bluetoothState) {
+            BluetoothAdapter.STATE_OFF -> {
+                onBlueToothStateChanged.invoke("Bluetooth off")
+            }
+            BluetoothAdapter.STATE_ON -> {
+                onBlueToothStateChanged.invoke("Bluetooth on")
+            }
+        }
+    }, intentFilter)
+}
+
 @Composable
 private fun DebugList(state: DebugState) {
     when (state) {
@@ -59,14 +90,71 @@ private fun DisplayDebugButton(onDebugClicked: () -> Unit) {
     }
 }
 @Composable
-fun SalesStatus(state: SalesState, handleEvent: (SalesState) -> Unit) {
+fun SalesStatus(
+    state: SalesState,
+    handleEvent: (SalesState) -> Unit,
+    initializationState: InitializationState,
+    handleInitializationEvent: () -> Unit,
+) {
     var defaultState by remember {
         mutableStateOf(true)
     }
+    var isHideRow by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var paymentOptionText by rememberSaveable {
+        mutableStateOf("")
+    }
+    when (initializationState) {
+        InitializationState.DeviceDisconnected -> {
+            Text(text = "Disconnected")
+            Button(onClick = {
+                handleInitializationEvent.invoke()
+            }) {
+                Text(text = "Reconnect")
+            }
+        }
+        else -> {}
+    }
     when (state) {
         is SalesState.None -> {
-            Text(text = stringResource(id = R.string.swipe_or_tap))
-            handleEvent(SalesState.SwipeOrTap)
+            if (isHideRow) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(text = paymentOptionText)
+                    Button(onClick = {
+                        isHideRow = false
+                    }) {
+                        Text(text = "Choose Payment Type")
+                    }
+                }
+
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(onClick = {
+                        paymentOptionText = "Swipe To Pay"
+                        handleEvent.invoke(SalesState.SwipeToPay)
+                        isHideRow = true
+                    }) {
+                        Text(text = "Swipe To Pay")
+
+                    }
+                    Button(onClick = {
+                        paymentOptionText = "Tap Or use chip"
+                        handleEvent.invoke(SalesState.TapToPay)
+                        isHideRow = true
+                    }) {
+                        Text(text = "Tap To Pay")
+                    }
+                }
+            }
         }
         is SalesState.Swiped -> {
             val data: CardData? = state.name

@@ -8,6 +8,7 @@ sealed class InitializationState {
     class DeviceWarning(val warningMessage: String) : InitializationState()
     class BluetoothScanRequestError(val errorMessage: String) : InitializationState()
     class DisplayDetails(val detailList: MutableList<String>) : InitializationState()
+    class ConnectToDevice(val identifier: String) : InitializationState()
     object None : InitializationState()
     object InitializeSdk : InitializationState()
     object DeviceConnected: InitializationState()

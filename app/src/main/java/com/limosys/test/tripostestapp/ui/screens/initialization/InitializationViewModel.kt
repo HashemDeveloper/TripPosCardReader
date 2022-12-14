@@ -44,6 +44,11 @@ class InitializationViewModel @Inject constructor(application: Application): And
                     this._initializationState.value = InitializationState.EnableBlueTooth
                 }
             }
+            is InitializationState.ConnectToDevice -> {
+                if (isBluetoothEnabled(getApplication())) {
+                    initializeSdk(state.identifier)
+                }
+            }
             is InitializationState.DebugClicked -> {
                 this._initializationState.value = InitializationState.DisplayDetails(this.detailList)
             }
@@ -70,24 +75,22 @@ class InitializationViewModel @Inject constructor(application: Application): And
         }
     }
     private fun initializeSdk(identifier: String) {
-        if (!this.sharedVtp.isInitialized) {
-            viewModelScope.launch(Dispatchers.IO) {
-                try {
-                    sharedVtp.initialize(getApplication() as Context, TriposConfig.getSharedConfig(identifier), this@InitializationViewModel)
-                    _initializationState.value = InitializationState.SdkInitializationSuccess(identifier)
-                    addToList("Finished Initializing SDK")
-                } catch (e: Exception) {
-                    if (BuildConfig.DEBUG) {
-                        print(e.message)
-                    }
-                    _initializationState.value = InitializationState.SdkInitializationException(e.message ?: "")
-                    addToList("Error Initializing SDK. Exception: (${e.message})")
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                sharedVtp.initialize(getApplication() as Context, TriposConfig.getSharedConfig(identifier), this@InitializationViewModel)
+                _initializationState.value = InitializationState.SdkInitializationSuccess(identifier)
+                addToList("Finished Initializing SDK")
+            } catch (e: Exception) {
+                if (BuildConfig.DEBUG) {
+                    print(e.message)
                 }
+                _initializationState.value = InitializationState.SdkInitializationException(e.message ?: "")
+                addToList("Error Initializing SDK. Exception: (${e.message})")
             }
         }
     }
 
-    override fun onConnected(p0: Device?, p1: String?, p2: String?, p3: String?) {
+    override fun onConnected(device: Device?, description: String?, model: String?, serialNumber: String?) {
         debug("Connected")
         addToList("Connected")
         this._initializationState.value = InitializationState.DeviceConnected
@@ -127,9 +130,8 @@ class InitializationViewModel @Inject constructor(application: Application): And
      */
     override fun onScanRequestCompleted(bArray: ArrayList<String>?) {
         val identifier: String = bArray?.get(0) ?: ""
-        addToList("Initializing SDK...")
-        initializeSdk(identifier)
-        //TODO: Send event to initialize SDK
+        addToList("Detected BBPosDevice with identifier: $identifier")
+        this._initializationState.value = InitializationState.ConnectToDevice(identifier)
     }
 
     override fun onScanRequestError(p0: Exception?) {

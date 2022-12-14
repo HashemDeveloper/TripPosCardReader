@@ -10,7 +10,6 @@ import com.vantiv.triposmobilesdk.enums.NumericInputType
 import com.vantiv.triposmobilesdk.enums.SelectionType
 import com.vantiv.triposmobilesdk.enums.TransactionType
 import com.vantiv.triposmobilesdk.exceptions.CardInputEnableException
-import com.vantiv.triposmobilesdk.exceptions.DeviceEmvChipErrorException
 import com.vantiv.triposmobilesdk.exceptions.DeviceNotConnectedException
 import com.vantiv.triposmobilesdk.exceptions.DeviceNotInitializedException
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -41,17 +40,11 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
 
     fun handleEvent(state: SalesState) {
         when (state) {
-            is SalesState.SwipeOrTap -> {
-                if (!this.sharedVtp.isInitialized) {
-                    addToList("Not Initialized!")
-                    return
-                }
-                this.device = this.sharedVtp.device
-                if (this.device !is CardInputDevice) {
-                    addToList("Invalid card input device!")
-                    return
-                }
-                initializeCardInputReader()
+            is SalesState.SwipeToPay -> {
+                initializePaymentType(state)
+            }
+            is SalesState.TapToPay -> {
+                initializePaymentType(state)
             }
             is SalesState.None -> {
                 this._salesState.value = SalesState.None
@@ -59,11 +52,34 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
             else -> {}
         }
     }
-    private fun initializeCardInputReader() {
+
+    private fun initializePaymentType(state: SalesState) {
+        if (!this.sharedVtp.isInitialized) {
+            addToList("Not Initialized!")
+            return
+        }
+        this.device = this.sharedVtp.device
+        if (this.device !is CardInputDevice) {
+            addToList("Invalid card input device!")
+            return
+        }
+        initializeCardInputReader(state)
+    }
+
+    private fun initializeCardInputReader(state: SalesState) {
         try {
-            addToList("Enabling Card Input Listeners...")
-//            (device as CardInputDevice).enableCardInput(this, this)
-            (device as CardInputDevice).enableCardInput("Tap To Pay", false, false, true, true, true, TransactionType.Sale, BigDecimal(0.5), BigDecimal(0.5), this, this)
+
+            when (state) {
+                SalesState.SwipeToPay -> {
+                    addToList("Enabling swipe to pay Card Input Listeners...")
+                    (device as CardInputDevice).enableCardInput(this, this)
+                }
+                SalesState.TapToPay -> {
+                    addToList("Enabling tap to pay Card Input Listeners...")
+                    (device as CardInputDevice).enableCardInput("Tap To Pay", false, false, true, true, true, TransactionType.Sale, BigDecimal(0.5), BigDecimal(0.5), this, this)
+                }
+                else -> {}
+            }
         } catch (e: DeviceNotConnectedException) {
             addToList(e.message ?: "")
             e.printStackTrace()

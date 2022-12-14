@@ -3,7 +3,6 @@ package com.limosys.test.tripostestapp.ui.screens.initialization
 import android.Manifest
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -34,8 +33,7 @@ import com.limosys.test.tripostestapp.component.MessageHandler
 import com.limosys.test.tripostestapp.component.StandardDivider
 import com.limosys.test.tripostestapp.ui.routes.AppRoutes
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
-import com.limosys.test.tripostestapp.utils.MessageState
-import com.limosys.test.tripostestapp.utils.isBluetoothEnabled
+import com.limosys.test.tripostestapp.utils.*
 import kotlinx.coroutines.flow.StateFlow
 
 
@@ -52,7 +50,10 @@ fun InitializationScreen(
     var buttonText by rememberSaveable {
         mutableStateOf("")
     }
-    context.registerReceiver(broadCastReceiver { bluetoothState ->
+    var deviceIdentifier by rememberSaveable {
+        mutableStateOf("")
+    }
+    context.registerReceiver(broadCastReceiver{ bluetoothState ->
         when (bluetoothState) {
             BluetoothAdapter.STATE_OFF -> {
                 buttonText = "Turn Bluetooth On"
@@ -62,15 +63,34 @@ fun InitializationScreen(
             }
         }
     }, intentFilter)
+
+    when (state) {
+        is InitializationState.ConnectToDevice -> {
+            buttonText = "Connect"
+            val identifier = state.identifier
+            deviceIdentifier = identifier
+        }
+        is InitializationState.SdkInitializationSuccess -> {
+            buttonText = "Connecting.."
+        }
+        is InitializationState.DeviceConnectionError -> {
+            buttonText = "Retry"
+        }
+        else -> {}
+    }
     MainContent(
         state,
         buttonText,
         onConnected = {
-            navController.navigate(AppRoutes.SALES_SCREEN.name)
+            navController.navigate(AppRoutes.SALES_SCREEN.name + "/$deviceIdentifier")
         },
         detailList,
     ) {
-        handleEvent.invoke(InitializationState.ScanBlueTooth)
+        if (buttonText.isEmpty() || buttonText == "Scan") {
+            handleEvent.invoke(InitializationState.ScanBlueTooth)
+        } else if (buttonText == "Connect" || buttonText == "Connecting.." || buttonText == "Retry") {
+            handleEvent.invoke(InitializationState.ConnectToDevice(deviceIdentifier))
+        }
     }
 }
 
@@ -141,6 +161,7 @@ private fun DisplayDebugButton(onDebugClicked: () -> Unit) {
 }
 @Composable
 fun DisplayStatus(state: InitializationState, onConnected: () -> Unit) {
+    val context: Context = LocalContext.current
     when (state) {
         is InitializationState.BlueToothScanInitialized -> {
             DisplayMessage(message = stringResource(id = R.string.turn_on_triPOS_bluetooth_device))
@@ -165,17 +186,15 @@ fun DisplayStatus(state: InitializationState, onConnected: () -> Unit) {
         }
         is InitializationState.DeviceDisconnected -> {
             DisplayMessage(message = stringResource(id = R.string.disconnected))
+            val intent = Intent(DEVICE_DISCONNECTED)
+            context.sendBroadcast(intent)
         }
         is InitializationState.DeviceConnectionError -> {
             val message: String = state.errorMessage
-            val activity = LocalContext.current as Activity
-
-            Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                DisplayMessage(message = message)
-                RetryButton {
-                    activity.recreate()
-                }
-            }
+            DisplayMessage(message = message)
+            val intent = Intent(DEVICE_ERROR)
+            intent.putExtra(DEVICE_ERROR, state.errorMessage)
+            context.sendBroadcast(intent)
         }
         is InitializationState.DeviceBatteryLow -> {
             MessageHandler(state = MessageState.WARNING(stringResource(id = R.string.battery_low)))
@@ -183,9 +202,18 @@ fun DisplayStatus(state: InitializationState, onConnected: () -> Unit) {
         is InitializationState.DeviceWarning -> {
             val warning: String = state.warningMessage
             MessageHandler(state = MessageState.WARNING(warning))
+
+            val intent = Intent(DEVICE_WARNING)
+            intent.putExtra(DEVICE_WARNING, state.warningMessage)
+            context.sendBroadcast(intent)
         }
         is InitializationState.EnableBlueTooth -> {
             NavigateToBluetoothSettings()
+        }
+        is InitializationState.ConnectToDevice -> {
+            val identifier = state.identifier
+            val message = "Detected BBPosDevice with identifier: $identifier"
+            DisplayMessage(message = message)
         }
         else -> {}
     }
@@ -215,8 +243,6 @@ private fun RetryButton(onRetryClicked: () -> Unit) {
 @Composable
 private fun InitializeSdkButton(buttonText: String, permissionsToCheck: MultiplePermissionsState, handleEvent: () -> Unit) {
     if (permissionsToCheck.allPermissionsGranted) {
-        //TODO: Check if Bluetooth is enabled
-        // if not prompt them to enable bluetooth
         DisplayActionButton(buttonText.ifEmpty { getTitle() }) {
             handleEvent.invoke()
         }
@@ -279,18 +305,6 @@ private fun getTextToShowGivenPermissions(
         }
     )
     return textToShow.toString()
-}
-fun broadCastReceiver(onStateChanged: (Int) -> Unit): BroadcastReceiver = object : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
-        val action = intent.action
-        if (action == BluetoothAdapter.ACTION_STATE_CHANGED) {
-            val state = intent.getIntExtra(
-                BluetoothAdapter.EXTRA_STATE,
-                BluetoothAdapter.ERROR
-            )
-            onStateChanged.invoke(state)
-        }
-    }
 }
 
 @Preview

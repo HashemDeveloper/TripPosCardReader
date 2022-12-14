@@ -7,4 +7,6 @@ sealed class SalesState {
     object None : SalesState()
     object SwipeOrTap : SalesState()
     object EnabledCardInput : SalesState()
+    object SwipeToPay : SalesState()
+    object TapToPay : SalesState()
 }
