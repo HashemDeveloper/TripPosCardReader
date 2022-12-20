@@ -1,9 +1,11 @@
 package com.limosys.test.tripostestapp.ui.screens.sales
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import com.limosys.test.tripostestapp.ui.screens.states.DebugState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
+import com.limosys.test.tripostestapp.utils.ReflectionUtils.recursiveToString
 import com.vantiv.triposmobilesdk.*
 import com.vantiv.triposmobilesdk.enums.AmountConfirmationType
 import com.vantiv.triposmobilesdk.enums.NumericInputType
@@ -100,7 +102,14 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
     override fun onCardInputCompleted(data: CardData?) {
         addToList("Card Actions:${data?.entryMode}")
         this._salesState.value = SalesState.Swiped(data)
-        this.device.reset()
+        var output = ""
+        try {
+            output = recursiveToString(data)
+            Log.d("recursiveToString", output)
+        } catch (e: IllegalAccessException) {
+            e.printStackTrace()
+        }
+        print(output)
     }
 
     override fun onCardInputError(p0: Exception?) {
