@@ -5,8 +5,6 @@ import com.vantiv.triposmobilesdk.CardData
 sealed class SalesState {
     class Swiped(val name: CardData?) : SalesState()
     object None : SalesState()
-    object SwipeOrTap : SalesState()
-    object EnabledCardInput : SalesState()
     object SwipeToPay : SalesState()
     object TapToPay : SalesState()
 }

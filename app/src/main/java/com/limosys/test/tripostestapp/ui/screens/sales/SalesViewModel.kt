@@ -105,11 +105,11 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
         var output = ""
         try {
             output = recursiveToString(data)
-            Log.d("recursiveToString", output)
         } catch (e: IllegalAccessException) {
             e.printStackTrace()
         }
-        print(output)
+        val cardOutput = "Card Output:\n$output"
+        addToList(cardOutput)
     }
 
     override fun onCardInputError(p0: Exception?) {
