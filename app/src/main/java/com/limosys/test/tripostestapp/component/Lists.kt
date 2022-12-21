@@ -30,7 +30,7 @@ fun DisplayDebugList(detailList: MutableList<String>) {
         .padding(Spacing.TINY_8.space)) {
         LazyColumn(modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, color = Color.Gray, RoundedCornerShape(8.dp))
+            .border(2.dp, color = Color.Gray, RoundedCornerShape(8.dp))
             .height(300.dp)
             .padding(8.dp)
             .align(Alignment.TopStart), state = listState ,content = {
