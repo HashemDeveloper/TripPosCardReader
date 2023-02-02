@@ -145,9 +145,7 @@ fun SalesStatus(
                 }
             }
         }
-        is SalesState.Swiped -> {
-            val data: CardData? = state.name
-            data?.entryMode?.name?.let { Text(text = it) }
+        is SalesState.Completed -> {
             LaunchedEffect(key1 = defaultState, block = {
                 delay(5000)
                 handleEvent(SalesState.None)

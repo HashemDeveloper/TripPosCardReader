@@ -16,7 +16,6 @@ import com.vantiv.triposmobilesdk.responses.SaleResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import java.lang.Exception
 import java.math.BigDecimal
 import java.util.concurrent.TimeoutException
 import javax.inject.Inject
@@ -26,6 +25,9 @@ import javax.inject.Inject
 class SalesViewModel @Inject constructor(application: Application): AndroidViewModel(application), SaleRequestListener, DeviceInteractionListener {
     private var sharedVtp: VTP = triPOSMobileSDK.getSharedVtp()
     private lateinit var device: Device
+
+    private var isSalesProcessing: Boolean = false
+
     private val _salesState: MutableStateFlow<SalesState> = MutableStateFlow(SalesState.None)
     val salesState: StateFlow<SalesState> = _salesState
 
@@ -69,8 +71,23 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
         try {
             when (state) {
                 SalesState.SetupPayment -> {
-                    addToList("Processing payment...")
-                    sharedVtp.processSaleRequest(setupSaleRequest(10.00), this, this)
+
+                    try {
+                        if (!isSalesProcessing) {
+                            addToList("Initializing sales request...")
+                            sharedVtp.processSaleRequest(setupSaleRequest(10.00), this, this)
+                        } else {
+                            addToList("Processing payment...")
+                        }
+
+                        sharedVtp.statusListener = VtpProcessStatusListener {
+                            isSalesProcessing = it.statusOrderPosition != 0
+                        }
+                    } catch (e: Exception) {
+                        if (BuildConfig.DEBUG) {
+                            e.printStackTrace()
+                        }
+                    }
                 }
                 else -> {}
             }
@@ -145,10 +162,12 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
 
     override fun onSaleRequestCompleted(saleResponse: SaleResponse?) {
         print(saleResponse)
+        this._salesState.value = SalesState.Completed
         addToList("Sales Response: ${saleResponse?.transactionStatus}")
     }
 
     override fun onSaleRequestError(error: Exception?) {
         addToList("Sale Request Error ${error?.message}")
+        this._salesState.value = SalesState.Error(error?.message)
     }
 }
