@@ -39,7 +39,7 @@ object TriposConfig {
     private fun setupApplicationConfiguration() {
         val config = ApplicationConfiguration()
         config.idlePrompt = "TriposTestApp"
-        config.applicationMode = ApplicationMode.Production
+        config.applicationMode = ApplicationMode.TestCertification
         this.sharedConfig.applicationConfiguration = config
     }
 

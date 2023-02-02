@@ -103,9 +103,7 @@ fun SalesStatus(
     var isHideRow by rememberSaveable {
         mutableStateOf(false)
     }
-    var paymentOptionText by rememberSaveable {
-        mutableStateOf("")
-    }
+
     when (initializationState) {
         InitializationState.DeviceDisconnected -> {
             Text(text = "Disconnected")
@@ -125,11 +123,10 @@ fun SalesStatus(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    Text(text = paymentOptionText)
                     Button(onClick = {
                         isHideRow = false
                     }) {
-                        Text(text = "Choose Payment Type")
+                        Text(text = "Done")
                     }
                 }
 
@@ -140,19 +137,10 @@ fun SalesStatus(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Button(onClick = {
-                        paymentOptionText = "Swipe To Pay"
-                        handleEvent.invoke(SalesState.SwipeToPay)
+                        handleEvent.invoke(SalesState.SetupPayment)
                         isHideRow = true
                     }) {
-                        Text(text = "Swipe To Pay")
-
-                    }
-                    Button(onClick = {
-                        paymentOptionText = "Tap Or use chip"
-                        handleEvent.invoke(SalesState.TapToPay)
-                        isHideRow = true
-                    }) {
-                        Text(text = "Tap To Pay")
+                        Text(text = "Pay")
                     }
                 }
             }

@@ -7,23 +7,23 @@ import com.limosys.test.tripostestapp.ui.screens.states.DebugState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
 import com.limosys.test.tripostestapp.utils.ReflectionUtils.recursiveToString
 import com.vantiv.triposmobilesdk.*
-import com.vantiv.triposmobilesdk.enums.AmountConfirmationType
-import com.vantiv.triposmobilesdk.enums.NumericInputType
-import com.vantiv.triposmobilesdk.enums.SelectionType
-import com.vantiv.triposmobilesdk.enums.TransactionType
+import com.vantiv.triposmobilesdk.enums.*
 import com.vantiv.triposmobilesdk.exceptions.CardInputEnableException
 import com.vantiv.triposmobilesdk.exceptions.DeviceNotConnectedException
 import com.vantiv.triposmobilesdk.exceptions.DeviceNotInitializedException
+import com.vantiv.triposmobilesdk.requests.SaleRequest
+import com.vantiv.triposmobilesdk.responses.SaleResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.lang.Exception
 import java.math.BigDecimal
 import java.util.concurrent.TimeoutException
 import javax.inject.Inject
 
 
 @HiltViewModel
-class SalesViewModel @Inject constructor(application: Application): AndroidViewModel(application), DeviceInteractionListener, CardInputListener {
+class SalesViewModel @Inject constructor(application: Application): AndroidViewModel(application), SaleRequestListener, DeviceInteractionListener {
     private var sharedVtp: VTP = triPOSMobileSDK.getSharedVtp()
     private lateinit var device: Device
     private val _salesState: MutableStateFlow<SalesState> = MutableStateFlow(SalesState.None)
@@ -42,10 +42,7 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
 
     fun handleEvent(state: SalesState) {
         when (state) {
-            is SalesState.SwipeToPay -> {
-                initializePaymentType(state)
-            }
-            is SalesState.TapToPay -> {
+            is SalesState.SetupPayment -> {
                 initializePaymentType(state)
             }
             is SalesState.None -> {
@@ -70,15 +67,10 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
 
     private fun initializeCardInputReader(state: SalesState) {
         try {
-
             when (state) {
-                SalesState.SwipeToPay -> {
-                    addToList("Enabling swipe to pay Card Input Listeners...")
-                    (device as CardInputDevice).enableCardInput(this, this)
-                }
-                SalesState.TapToPay -> {
-                    addToList("Enabling tap to pay Card Input Listeners...")
-                    (device as CardInputDevice).enableCardInput("Tap To Pay", false, false, true, true, true, TransactionType.Sale, BigDecimal(0.5), BigDecimal(0.5), this, this)
+                SalesState.SetupPayment -> {
+                    addToList("Processing payment...")
+                    sharedVtp.processSaleRequest(setupSaleRequest(10.00), this, this)
                 }
                 else -> {}
             }
@@ -94,28 +86,13 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
         }
     }
 
-    override fun onInputTimeout(p0: TimeoutException?) {
-        addToList(p0?.message ?: "")
-        print(p0?.message ?: "")
+    private fun setupSaleRequest(amount: Double): SaleRequest {
+        val saleRequest = SaleRequest()
+        saleRequest.transactionAmount = BigDecimal(amount)
+        saleRequest.cardholderPresentCode = CardHolderPresentCode.Present
+        return saleRequest
     }
 
-    override fun onCardInputCompleted(data: CardData?) {
-        addToList("Card Actions:${data?.entryMode}")
-        this._salesState.value = SalesState.Swiped(data)
-        var output = ""
-        try {
-            output = recursiveToString(data)
-        } catch (e: IllegalAccessException) {
-            e.printStackTrace()
-        }
-        val cardOutput = "Card Output:\n$output"
-        addToList(cardOutput)
-    }
-
-    override fun onCardInputError(p0: Exception?) {
-        print(p0?.message ?: "")
-        addToList(p0?.message ?: "")
-    }
 
     override fun onAmountConfirmation(
         type: AmountConfirmationType?,
@@ -164,5 +141,14 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
         print("Card removed!")
         addToList("Card removed")
         this.device.reset()
+    }
+
+    override fun onSaleRequestCompleted(saleResponse: SaleResponse?) {
+        print(saleResponse)
+        addToList("Sales Response: ${saleResponse?.transactionStatus}")
+    }
+
+    override fun onSaleRequestError(error: Exception?) {
+        addToList("Sale Request Error ${error?.message}")
     }
 }
