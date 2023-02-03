@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,7 +26,7 @@ fun DisplayDebugList(detailList: MutableList<String>) {
     val coroutineScope = rememberCoroutineScope()
     Box(modifier = Modifier
         .fillMaxWidth()
-        .padding(Spacing.TINY_8.space)) {
+        .padding(Spacing.SMALL_16_DP.space)) {
         LazyColumn(modifier = Modifier
             .fillMaxWidth()
             .border(2.dp, color = Color.Gray, RoundedCornerShape(8.dp))

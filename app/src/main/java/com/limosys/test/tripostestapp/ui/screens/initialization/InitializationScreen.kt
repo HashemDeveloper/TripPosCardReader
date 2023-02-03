@@ -1,7 +1,6 @@
 package com.limosys.test.tripostestapp.ui.screens.initialization
 
 import android.Manifest
-import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.Intent
@@ -27,10 +26,8 @@ import com.google.accompanist.permissions.MultiplePermissionsState
 import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.limosys.test.tripostestapp.R
-import com.limosys.test.tripostestapp.component.DebugButton
-import com.limosys.test.tripostestapp.component.DisplayDebugList
-import com.limosys.test.tripostestapp.component.MessageHandler
-import com.limosys.test.tripostestapp.component.StandardDivider
+import com.limosys.test.tripostestapp.component.*
+import com.limosys.test.tripostestapp.objects.ChoiceDialogData
 import com.limosys.test.tripostestapp.ui.routes.AppRoutes
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.utils.*
@@ -47,6 +44,9 @@ fun InitializationScreen(
     val detailList: MutableList<String> = showDetails.collectAsState().value
     val context: Context = LocalContext.current
     val intentFilter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
+    val choiceDialogData = remember {
+        mutableStateOf(ChoiceDialogData())
+    }
     var buttonText by rememberSaveable {
         mutableStateOf("")
     }
@@ -75,6 +75,20 @@ fun InitializationScreen(
         }
         is InitializationState.DeviceConnectionError -> {
             buttonText = "Retry"
+        }
+        is InitializationState.PromptDialog -> {
+            val devices: ArrayList<String> = state.devices
+            deviceIdentifier = devices[0]
+            SingleItemChoiceListDialog(
+                title = stringResource(id = R.string.multi_device_dialog_title),
+                items = devices,
+                actionButtonText = stringResource(id = R.string.action_ok),
+                onItemSelected = {
+                    deviceIdentifier = it
+                },
+            ) {
+                handleEvent.invoke(InitializationState.ConnectToDevice(deviceIdentifier))
+            }
         }
         else -> {}
     }

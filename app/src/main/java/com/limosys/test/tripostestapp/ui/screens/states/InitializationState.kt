@@ -1,5 +1,7 @@
 package com.limosys.test.tripostestapp.ui.screens.states
 
+import java.util.ArrayList
+
 
 sealed class InitializationState {
     class SdkInitializationSuccess(val deviceIdentifier: String) : InitializationState()
@@ -9,6 +11,8 @@ sealed class InitializationState {
     class BluetoothScanRequestError(val errorMessage: String) : InitializationState()
     class DisplayDetails(val detailList: MutableList<String>) : InitializationState()
     class ConnectToDevice(val identifier: String) : InitializationState()
+    class PromptDialog(val devices: ArrayList<String>) : InitializationState()
+
     object None : InitializationState()
     object InitializeSdk : InitializationState()
     object DeviceConnected: InitializationState()

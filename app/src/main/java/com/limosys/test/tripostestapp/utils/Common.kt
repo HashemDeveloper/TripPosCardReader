@@ -1,10 +1,15 @@
 package com.limosys.test.tripostestapp.utils
 
+import android.bluetooth.BluetoothA2dp
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothProfile
+import android.bluetooth.BluetoothProfile.ServiceListener
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.widget.Toast
+
 
 const val DEVICE_DISCONNECTED = "Device Disconnected"
 const val DEVICE_CONNECTED = "Device connected"

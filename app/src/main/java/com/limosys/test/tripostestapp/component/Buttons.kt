@@ -14,7 +14,7 @@ import com.limosys.test.tripostestapp.component.styles.Spacing
 fun DebugButton(onDebugClicked: () -> Unit) {
     Box(modifier = Modifier
         .fillMaxWidth()
-        .padding(Spacing.TINY_8.space)) {
+        .padding(Spacing.SMALL_16_DP.space)) {
         Button(modifier = Modifier
             .fillMaxWidth()
             .align(Alignment.BottomCenter) , onClick = {

@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.limosys.test.tripostestapp.repo.TriposDataStoreRepo
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.utils.TriposConfig
 import com.limosys.test.tripostestapp.utils.isBluetoothEnabled
@@ -24,7 +25,7 @@ import java.util.ArrayList
 import javax.inject.Inject
 
 @HiltViewModel
-class InitializationViewModel @Inject constructor(application: Application): AndroidViewModel(application), DeviceConnectionListener, BluetoothScanRequestListener {
+class InitializationViewModel @Inject constructor(application: Application, private val triposDataStoreRepo: TriposDataStoreRepo): AndroidViewModel(application), DeviceConnectionListener, BluetoothScanRequestListener {
 
     private val sharedVtp: VTP = triPOSMobileSDK.getSharedVtp()
     private val _initializationState: MutableStateFlow<InitializationState> = MutableStateFlow(InitializationState.None)
@@ -129,9 +130,16 @@ class InitializationViewModel @Inject constructor(application: Application): And
      * @param bArray returns list of BBPosDevices
      */
     override fun onScanRequestCompleted(bArray: ArrayList<String>?) {
-        val identifier: String = bArray?.get(0) ?: ""
-        addToList("Detected BBPosDevice with identifier: $identifier")
-        this._initializationState.value = InitializationState.ConnectToDevice(identifier)
+        bArray?.let {
+            if (it.size > 1) {
+                addToList("Multiple Device Detected $it")
+                this._initializationState.value = InitializationState.PromptDialog(it)
+            } else {
+                val identifier: String = it[0]
+                addToList("Detected BBPosDevice with identifier: $identifier")
+                this._initializationState.value = InitializationState.ConnectToDevice(identifier)
+            }
+        }
     }
 
     override fun onScanRequestError(p0: Exception?) {

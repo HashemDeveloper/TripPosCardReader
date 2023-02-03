@@ -9,5 +9,6 @@ enum class Spacing(val space: Dp) {
     TINY_2(2.dp),
     TINY_3(3.dp),
     TINY_4(4.dp),
-    TINY_8(16.dp)
+    SMALL_12_DP(12.dp),
+    SMALL_16_DP(16.dp),
 }
