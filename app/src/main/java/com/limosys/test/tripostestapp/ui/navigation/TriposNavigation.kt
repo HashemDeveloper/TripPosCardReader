@@ -17,14 +17,16 @@ import com.limosys.test.tripostestapp.ui.screens.sales.SalesViewModel
 import com.limosys.test.tripostestapp.ui.screens.states.DebugState
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
+import com.vantiv.triposmobilesdk.VTP
 
 @Composable
-fun TriposNavigation() {
+fun TriposNavigation(sharedVtp: VTP) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = AppRoutes.INITIALIZATION_SCREEN.name) {
         composable(route = AppRoutes.INITIALIZATION_SCREEN.name) {
             val viewModel: InitializationViewModel = hiltViewModel()
+            viewModel.sharedVtp = sharedVtp
             val state: InitializationState = viewModel.initializationState.collectAsState().value
             InitializationScreen(navController = navController, state, viewModel::handleEvents, viewModel.showDetails)
         }
@@ -38,6 +40,7 @@ fun TriposNavigation() {
                 navController.getBackStackEntry(AppRoutes.INITIALIZATION_SCREEN.name)
             })
             val salesViewModel: SalesViewModel = hiltViewModel()
+            salesViewModel.sharedVtp = sharedVtp
             val state: SalesState = salesViewModel.salesState.collectAsState().value
             val debugState: DebugState = salesViewModel.debugState.collectAsState().value
             val initializationState = initializationViewModel.initializationState.collectAsState().value

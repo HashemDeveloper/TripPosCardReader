@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.limosys.test.tripostestapp.repo.ISharedPref
 import com.limosys.test.tripostestapp.repo.TriposDataStoreRepo
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.utils.TriposConfig
@@ -19,15 +20,16 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.lang.Exception
 import java.util.ArrayList
 import javax.inject.Inject
 
 @HiltViewModel
-class InitializationViewModel @Inject constructor(application: Application, private val triposDataStoreRepo: TriposDataStoreRepo): AndroidViewModel(application), DeviceConnectionListener, BluetoothScanRequestListener {
-
-    private val sharedVtp: VTP = triPOSMobileSDK.getSharedVtp()
+class InitializationViewModel @Inject constructor(application: Application, private val iSharedPref: ISharedPref): AndroidViewModel(application), DeviceConnectionListener, BluetoothScanRequestListener {
+    lateinit var sharedVtp: VTP
+        internal set
     private val _initializationState: MutableStateFlow<InitializationState> = MutableStateFlow(InitializationState.None)
     val initializationState: StateFlow<InitializationState> = _initializationState
 
@@ -36,6 +38,17 @@ class InitializationViewModel @Inject constructor(application: Application, priv
 
     private val detailList: MutableList<String> = arrayListOf()
 
+    init {
+        getStoredDeviceIdentifier()
+    }
+    private fun getStoredDeviceIdentifier() {
+        val identifier: String = this.iSharedPref.getIdentifier()
+        if (identifier.isNotEmpty()) {
+            _initializationState.value = InitializationState.StoredDeviceIdentifier(identifier)
+        } else {
+            _initializationState.value = InitializationState.Start
+        }
+    }
     fun handleEvents(state: InitializationState) {
         when (state) {
             is InitializationState.ScanBlueTooth -> {
@@ -94,6 +107,7 @@ class InitializationViewModel @Inject constructor(application: Application, priv
     override fun onConnected(device: Device?, description: String?, model: String?, serialNumber: String?) {
         debug("Connected")
         addToList("Connected")
+        this.iSharedPref.setIdentifier(serialNumber ?: "")
         this._initializationState.value = InitializationState.DeviceConnected
     }
 
@@ -106,6 +120,7 @@ class InitializationViewModel @Inject constructor(application: Application, priv
     override fun onError(p0: Exception?) {
         debug(p0?.message ?: "")
         this._initializationState.value = InitializationState.DeviceConnectionError(p0?.message ?: "")
+        sharedVtp.deinitialize()
         addToList("Error connecting to Device. Details: (${p0?.message})")
     }
 

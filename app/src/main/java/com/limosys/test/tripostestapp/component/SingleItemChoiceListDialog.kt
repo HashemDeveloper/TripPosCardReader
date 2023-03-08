@@ -20,39 +20,22 @@ fun SingleItemChoiceListDialog(
     title: String,
     items: MutableList<String>,
     actionButtonText: String,
-    dismissOnBackPress: Boolean = false,
-    dismissOnClickOutside: Boolean = false,
     onItemSelected: (String) -> Unit,
     onCancelClicked: () -> Unit) {
-    AlertDialog(
-        title = { Text(
-            modifier = Modifier.padding(bottom = Spacing.TINY_4.space),
-            text = title,
-            style = MaterialTheme.typography.body1
-        ) },
-        onDismissRequest = {
-            onCancelClicked.invoke()
-        },
-        text = {
+    TriposSingleButtonDialog(
+        modifier = Modifier.padding(bottom = Spacing.TINY_4.space),
+        title = title,
+        actionButtonText = actionButtonText,
+        content = {
             ChoiceList(modifier = modifier, items = items) {
                 onItemSelected.invoke(it)
             }
         },
-        buttons = {
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Button(
-                    modifier = Modifier
-                        .align(Alignment.End)
-                        .padding(end = Spacing.SMALL_16_DP.space, bottom = Spacing.SMALL_16_DP.space),
-                    onClick = {
-                        onCancelClicked.invoke()
-                    }) {
-                    Text(text = actionButtonText)
-                }
-            }
-        },
-        properties = DialogProperties(dismissOnBackPress, dismissOnClickOutside)
-    )
+        onDismissRequest = {
+            onCancelClicked.invoke()
+        }) {
+        onCancelClicked.invoke()
+    }
 }
 
 @Composable

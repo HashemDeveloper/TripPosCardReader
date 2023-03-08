@@ -8,10 +8,7 @@ import android.content.IntentFilter
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -27,6 +24,7 @@ import com.google.accompanist.permissions.PermissionState
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.limosys.test.tripostestapp.R
 import com.limosys.test.tripostestapp.component.*
+import com.limosys.test.tripostestapp.component.styles.Spacing
 import com.limosys.test.tripostestapp.objects.ChoiceDialogData
 import com.limosys.test.tripostestapp.ui.routes.AppRoutes
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
@@ -44,9 +42,7 @@ fun InitializationScreen(
     val detailList: MutableList<String> = showDetails.collectAsState().value
     val context: Context = LocalContext.current
     val intentFilter = IntentFilter(BluetoothAdapter.ACTION_STATE_CHANGED)
-    val choiceDialogData = remember {
-        mutableStateOf(ChoiceDialogData())
-    }
+
     var buttonText by rememberSaveable {
         mutableStateOf("")
     }
@@ -65,6 +61,9 @@ fun InitializationScreen(
     }, intentFilter)
 
     when (state) {
+        is InitializationState.StoredDeviceIdentifier -> {
+            deviceIdentifier = state.storedDeviceIdentifier
+        }
         is InitializationState.ConnectToDevice -> {
             buttonText = "Connect"
             val identifier = state.identifier
@@ -74,7 +73,26 @@ fun InitializationScreen(
             buttonText = "Connecting.."
         }
         is InitializationState.DeviceConnectionError -> {
-            buttonText = "Retry"
+            TriposDoubleButtonDialog(
+                modifier = Modifier,
+                positiveButtonModifier = Modifier.padding(start = Spacing.SMALL_16_DP.space),
+                negativeButtonModifier = Modifier.padding(start = Spacing.SMALL_12_DP.space),
+                title = "Connection Error",
+                positiveButtonText = "Retry",
+                negativeButtonText = "Scan Again",
+                content = {
+                          Text(text = state.errorMessage, style = MaterialTheme.typography.subtitle1)
+                },
+                onDismissRequest = {},
+                onPositiveAction = {
+                    handleEvent.invoke(InitializationState.ConnectToDevice(deviceIdentifier))
+                },
+                onNegativeAction = {
+                    handleEvent.invoke(InitializationState.ScanBlueTooth)
+                })
+            val intent = Intent(DEVICE_ERROR)
+            intent.putExtra(DEVICE_ERROR, state.errorMessage)
+            context.sendBroadcast(intent)
         }
         is InitializationState.PromptDialog -> {
             val devices: ArrayList<String> = state.devices
@@ -99,11 +117,15 @@ fun InitializationScreen(
             navController.navigate(AppRoutes.SALES_SCREEN.name + "/$deviceIdentifier")
         },
         detailList,
-    ) {
-        if (buttonText.isEmpty() || buttonText == "Scan") {
-            handleEvent.invoke(InitializationState.ScanBlueTooth)
-        } else if (buttonText == "Connect" || buttonText == "Connecting.." || buttonText == "Retry") {
-            handleEvent.invoke(InitializationState.ConnectToDevice(deviceIdentifier))
+    ) {storedDeviceIdentifier ->
+        if (storedDeviceIdentifier.isNotEmpty()) {
+            handleEvent.invoke(InitializationState.ConnectToDevice(storedDeviceIdentifier))
+        } else {
+            if (buttonText.isEmpty() || buttonText == "Scan") {
+                handleEvent.invoke(InitializationState.ScanBlueTooth)
+            } else if (buttonText == "Connect" || buttonText == "Connecting.." || buttonText == "Retry") {
+                handleEvent.invoke(InitializationState.ConnectToDevice(deviceIdentifier))
+            }
         }
     }
 }
@@ -115,7 +137,7 @@ fun MainContent(
     buttonText: String,
     onConnected: () -> Unit,
     detailList: MutableList<String>,
-    handleEvent: () -> Unit
+    handleEvent: (String) -> Unit
 ) {
     val permissionsToCheck = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
         rememberMultiplePermissionsState(
@@ -137,7 +159,7 @@ fun MainContent(
         )
     }
     var displayDebug by rememberSaveable {
-        mutableStateOf(false)
+        mutableStateOf(true)
     }
     Surface(
         modifier = Modifier.fillMaxSize(), color = MaterialTheme.colors.background
@@ -154,12 +176,31 @@ fun MainContent(
             DisplayStatus(state) {
                 onConnected.invoke()
             }
-            InitializeSdkButton(buttonText, permissionsToCheck) {
-                handleEvent.invoke()
+            when (state) {
+                is InitializationState.None -> {
+                    CircularProgressIndicator()
+                }
+                is InitializationState.StoredDeviceIdentifier -> {
+                    val storedDeviceIdentifier: String = state.storedDeviceIdentifier
+                    handleEvent.invoke(storedDeviceIdentifier)
+                }
+                is InitializationState.ConnectToDevice, InitializationState.Start -> {
+                    InitializeSdkButton(buttonText, permissionsToCheck) {
+                        handleEvent.invoke("")
+                    }
+                }
+                is InitializationState.DeviceConnectionError -> {
+                    InitializeSdkButton(buttonText, permissionsToCheck) {
+                        handleEvent.invoke("")
+                    }
+                }
+                else -> {
+
+                }
             }
         }
         DisplayDebugButton {
-            displayDebug = true
+            displayDebug = !displayDebug
         }
     }
 }
@@ -206,9 +247,6 @@ fun DisplayStatus(state: InitializationState, onConnected: () -> Unit) {
         is InitializationState.DeviceConnectionError -> {
             val message: String = state.errorMessage
             DisplayMessage(message = message)
-            val intent = Intent(DEVICE_ERROR)
-            intent.putExtra(DEVICE_ERROR, state.errorMessage)
-            context.sendBroadcast(intent)
         }
         is InitializationState.DeviceBatteryLow -> {
             MessageHandler(state = MessageState.WARNING(stringResource(id = R.string.battery_low)))

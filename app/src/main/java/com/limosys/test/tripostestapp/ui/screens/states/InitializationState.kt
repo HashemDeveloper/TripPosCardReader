@@ -12,6 +12,8 @@ sealed class InitializationState {
     class DisplayDetails(val detailList: MutableList<String>) : InitializationState()
     class ConnectToDevice(val identifier: String) : InitializationState()
     class PromptDialog(val devices: ArrayList<String>) : InitializationState()
+    class StoredDeviceIdentifier(val storedDeviceIdentifier: String) : InitializationState()
+    object Start : InitializationState()
 
     object None : InitializationState()
     object InitializeSdk : InitializationState()

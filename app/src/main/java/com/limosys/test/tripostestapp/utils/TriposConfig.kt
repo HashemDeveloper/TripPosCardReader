@@ -122,7 +122,7 @@ object TriposConfig {
         this.transactionConfig.isEmvAllowed = true
         this.transactionConfig.isQuickChipAllowed = true
         this.transactionConfig.isCashbackAllowed = true
-        this.transactionConfig.preReadQuickChipPlaceHolderAmount = BigDecimal.ONE;
+        this.transactionConfig.preReadQuickChipPlaceHolderAmount = BigDecimal.ONE
         this.sharedConfig.transactionConfiguration = this.transactionConfig
     }
 

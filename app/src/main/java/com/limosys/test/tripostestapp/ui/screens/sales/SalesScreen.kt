@@ -35,7 +35,7 @@ fun SalesScreen(
     initializationState: InitializationState
 ) {
     var isDebugClicked by rememberSaveable {
-        mutableStateOf(false)
+        mutableStateOf(true)
     }
     SetupBroadCastListener{
 
@@ -53,7 +53,7 @@ fun SalesScreen(
             }
         }
         DisplayDebugButton {
-            isDebugClicked = true
+            isDebugClicked = !isDebugClicked
         }
     }
 }
@@ -105,13 +105,16 @@ fun SalesStatus(
     }
 
     when (initializationState) {
-        InitializationState.DeviceDisconnected -> {
+        is InitializationState.DeviceDisconnected -> {
             Text(text = "Disconnected")
             Button(onClick = {
                 handleInitializationEvent.invoke()
             }) {
                 Text(text = "Reconnect")
             }
+        }
+        is InitializationState.DeviceConnectionError -> {
+            handleEvent.invoke(SalesState.Recover)
         }
         else -> {}
     }

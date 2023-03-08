@@ -1,11 +1,15 @@
 package com.limosys.test.tripostestapp.ui.screens.sales
 
 import android.app.Application
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.limosys.test.tripostestapp.repo.TriposDataStoreRepo
 import com.limosys.test.tripostestapp.ui.screens.states.DebugState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
 import com.limosys.test.tripostestapp.utils.ReflectionUtils.recursiveToString
+import com.limosys.test.tripostestapp.utils.TriposConfig
 import com.vantiv.triposmobilesdk.*
 import com.vantiv.triposmobilesdk.enums.*
 import com.vantiv.triposmobilesdk.exceptions.CardInputEnableException
@@ -14,16 +18,20 @@ import com.vantiv.triposmobilesdk.exceptions.DeviceNotInitializedException
 import com.vantiv.triposmobilesdk.requests.SaleRequest
 import com.vantiv.triposmobilesdk.responses.SaleResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import java.math.BigDecimal
 import java.util.concurrent.TimeoutException
 import javax.inject.Inject
 
 
 @HiltViewModel
-class SalesViewModel @Inject constructor(application: Application): AndroidViewModel(application), SaleRequestListener, DeviceInteractionListener {
-    private var sharedVtp: VTP = triPOSMobileSDK.getSharedVtp()
+class SalesViewModel @Inject constructor(application: Application, private val triposDataStoreRepo: TriposDataStoreRepo): AndroidViewModel(application), SaleRequestListener, DeviceInteractionListener {
+    lateinit var sharedVtp: VTP
+        internal set
     private lateinit var device: Device
 
     private var isSalesProcessing: Boolean = false
@@ -59,47 +67,36 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
             addToList("Not Initialized!")
             return
         }
-        this.device = this.sharedVtp.device
-        if (this.device !is CardInputDevice) {
-            addToList("Invalid card input device!")
-            return
-        }
         initializeCardInputReader(state)
     }
 
     private fun initializeCardInputReader(state: SalesState) {
-        try {
-            when (state) {
-                SalesState.SetupPayment -> {
+        when (state) {
+            SalesState.SetupPayment -> {
+                try {
+                    if (!isSalesProcessing) {
+                        addToList("Initializing sales request...")
+                        viewModelScope.launch(Dispatchers.IO) {
+                            sharedVtp.processSaleRequest(setupSaleRequest(10.00), this@SalesViewModel, this@SalesViewModel)
+                        }.invokeOnCompletion {
+                            it?.let {
+                                print(it)
+                            }
+                        }
+                    } else {
+                        addToList("Processing payment...")
+                    }
 
-                    try {
-                        if (!isSalesProcessing) {
-                            addToList("Initializing sales request...")
-                            sharedVtp.processSaleRequest(setupSaleRequest(10.00), this, this)
-                        } else {
-                            addToList("Processing payment...")
-                        }
-
-                        sharedVtp.statusListener = VtpProcessStatusListener {
-                            isSalesProcessing = it.statusOrderPosition != 0
-                        }
-                    } catch (e: Exception) {
-                        if (BuildConfig.DEBUG) {
-                            e.printStackTrace()
-                        }
+                    sharedVtp.statusListener = VtpProcessStatusListener {
+                        isSalesProcessing = it.statusOrderPosition != 0
+                    }
+                } catch (e: Exception) {
+                    if (BuildConfig.DEBUG) {
+                        e.printStackTrace()
                     }
                 }
-                else -> {}
             }
-        } catch (e: DeviceNotConnectedException) {
-            addToList(e.message ?: "")
-            e.printStackTrace()
-        } catch (e: DeviceNotInitializedException) {
-            addToList(e.message ?: "")
-            e.printStackTrace()
-        } catch (e: CardInputEnableException) {
-            addToList(e.message ?: "")
-            e.printStackTrace()
+            else -> {}
         }
     }
 
@@ -125,6 +122,7 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
         p1: SelectionType?,
         p2: DeviceInteractionListener.SelectChoiceListener?
     ) {
+        print(p0)
     }
 
     override fun onNumericInput(

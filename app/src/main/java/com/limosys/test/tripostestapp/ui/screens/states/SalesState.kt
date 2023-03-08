@@ -10,4 +10,5 @@ sealed class SalesState {
     object SetupPayment: SalesState()
     object Completed : SalesState()
     class Error(message: String?): SalesState()
+    object Recover: SalesState()
 }
