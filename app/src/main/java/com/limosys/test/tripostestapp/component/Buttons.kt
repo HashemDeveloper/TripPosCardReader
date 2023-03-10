@@ -12,6 +12,19 @@ import com.limosys.test.tripostestapp.component.styles.Spacing
 
 @Composable
 fun DebugButton(onDebugClicked: () -> Unit) {
+    CommonButton(text = "Debug") {
+        onDebugClicked.invoke()
+    }
+}
+
+@Composable
+fun SwitchDevice(onSwitchDevice: () -> Unit) {
+    CommonButton(text = "Switch Device") {
+        onSwitchDevice.invoke()
+    }
+}
+@Composable
+private fun CommonButton(text: String, onDebugClicked: () -> Unit) {
     Box(modifier = Modifier
         .fillMaxWidth()
         .padding(Spacing.SMALL_16_DP.space)) {
@@ -20,7 +33,7 @@ fun DebugButton(onDebugClicked: () -> Unit) {
             .align(Alignment.BottomCenter) , onClick = {
             onDebugClicked.invoke()
         }) {
-            Text(text = "Debug")
+            Text(text = text)
         }
     }
 }

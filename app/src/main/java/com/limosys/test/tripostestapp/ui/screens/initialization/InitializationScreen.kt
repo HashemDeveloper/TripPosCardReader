@@ -25,7 +25,6 @@ import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import com.limosys.test.tripostestapp.R
 import com.limosys.test.tripostestapp.component.*
 import com.limosys.test.tripostestapp.component.styles.Spacing
-import com.limosys.test.tripostestapp.objects.ChoiceDialogData
 import com.limosys.test.tripostestapp.ui.routes.AppRoutes
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.utils.*
@@ -182,7 +181,9 @@ fun MainContent(
                 }
                 is InitializationState.StoredDeviceIdentifier -> {
                     val storedDeviceIdentifier: String = state.storedDeviceIdentifier
-                    handleEvent.invoke(storedDeviceIdentifier)
+                    InitializeSdkButton("Connect", permissionsToCheck) {
+                        handleEvent.invoke(storedDeviceIdentifier)
+                    }
                 }
                 is InitializationState.ConnectToDevice, InitializationState.Start -> {
                     InitializeSdkButton(buttonText, permissionsToCheck) {
@@ -199,8 +200,13 @@ fun MainContent(
                 }
             }
         }
-        DisplayDebugButton {
-            displayDebug = !displayDebug
+        Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Bottom) {
+            SwitchDeviceButton {
+                handleEvent.invoke("")
+            }
+            DisplayDebugButton {
+                displayDebug = !displayDebug
+            }
         }
     }
 }
@@ -212,6 +218,12 @@ private fun DebugList(list: MutableList<String>) {
 private fun DisplayDebugButton(onDebugClicked: () -> Unit) {
     DebugButton {
        onDebugClicked.invoke()
+    }
+}
+@Composable
+private fun SwitchDeviceButton(onSwitchDeviceClicked: () -> Unit) {
+    SwitchDevice {
+        onSwitchDeviceClicked.invoke()
     }
 }
 @Composable
@@ -366,6 +378,5 @@ fun DisplayPreview() {
         "",
         onConnected = {},
         detailList = arrayListOf()) {
-
     }
 }

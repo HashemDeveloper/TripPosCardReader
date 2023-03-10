@@ -4,8 +4,9 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.Gson
+import com.limosys.test.tripostestapp.objects.DeviceObj
 import com.limosys.test.tripostestapp.repo.ISharedPref
-import com.limosys.test.tripostestapp.repo.TriposDataStoreRepo
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.utils.TriposConfig
 import com.limosys.test.tripostestapp.utils.isBluetoothEnabled
@@ -13,14 +14,11 @@ import com.vantiv.triposmobilesdk.BluetoothScanRequestListener
 import com.vantiv.triposmobilesdk.BuildConfig
 import com.vantiv.triposmobilesdk.Device
 import com.vantiv.triposmobilesdk.DeviceConnectionListener
-import com.vantiv.triposmobilesdk.OTAUpdateListener
 import com.vantiv.triposmobilesdk.VTP
-import com.vantiv.triposmobilesdk.triPOSMobileSDK
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import java.lang.Exception
 import java.util.ArrayList
@@ -37,14 +35,20 @@ class InitializationViewModel @Inject constructor(application: Application, priv
     val showDetails: StateFlow<MutableList<String>> = _showDetails
 
     private val detailList: MutableList<String> = arrayListOf()
-
+    private val gson = Gson()
     init {
         getStoredDeviceIdentifier()
     }
     private fun getStoredDeviceIdentifier() {
         val identifier: String = this.iSharedPref.getIdentifier()
         if (identifier.isNotEmpty()) {
-            _initializationState.value = InitializationState.StoredDeviceIdentifier(identifier)
+            val deviceObj: DeviceObj = this.gson.fromJson(identifier, DeviceObj::class.java)
+            if (deviceObj.devices.size > 1) {
+                addToList("Multiple Device Detected ${deviceObj.devices}")
+                this._initializationState.value = InitializationState.PromptDialog(deviceObj.devices)
+            } else {
+                _initializationState.value = InitializationState.StoredDeviceIdentifier(deviceObj.devices[0])
+            }
         } else {
             _initializationState.value = InitializationState.Start
         }
@@ -107,7 +111,26 @@ class InitializationViewModel @Inject constructor(application: Application, priv
     override fun onConnected(device: Device?, description: String?, model: String?, serialNumber: String?) {
         debug("Connected")
         addToList("Connected")
-        this.iSharedPref.setIdentifier(serialNumber ?: "")
+        val deviceList: ArrayList<String> = arrayListOf()
+        val deviceObj = DeviceObj()
+        val identifier: String = this.iSharedPref.getIdentifier()
+        if (identifier.isNotEmpty()) {
+            val obj: DeviceObj = this.gson.fromJson(identifier, DeviceObj::class.java)
+            obj.devices.forEach { deviceId ->
+                deviceList.add(deviceId)
+                if (deviceId != serialNumber) {
+                    deviceList.add(serialNumber ?: "")
+                    deviceObj.devices = deviceList
+                }
+            }
+        } else {
+            deviceList.add(serialNumber ?: "")
+            deviceObj.devices = deviceList
+        }
+        val jsonDeviceObj = gson.toJson(deviceObj)
+        if (deviceObj.devices.isNotEmpty()) {
+            this.iSharedPref.setIdentifier(jsonDeviceObj)
+        }
         this._initializationState.value = InitializationState.DeviceConnected
     }
 
