@@ -8,15 +8,13 @@ import androidx.lifecycle.viewModelScope
 import com.limosys.test.tripostestapp.repo.TriposDataStoreRepo
 import com.limosys.test.tripostestapp.ui.screens.states.DebugState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
-import com.limosys.test.tripostestapp.utils.ReflectionUtils.recursiveToString
-import com.limosys.test.tripostestapp.utils.TriposConfig
 import com.vantiv.triposmobilesdk.*
 import com.vantiv.triposmobilesdk.enums.*
-import com.vantiv.triposmobilesdk.exceptions.CardInputEnableException
-import com.vantiv.triposmobilesdk.exceptions.DeviceNotConnectedException
-import com.vantiv.triposmobilesdk.exceptions.DeviceNotInitializedException
+import com.vantiv.triposmobilesdk.exceptions.StoredTransactionNotFoundException
 import com.vantiv.triposmobilesdk.requests.SaleRequest
 import com.vantiv.triposmobilesdk.responses.SaleResponse
+import com.vantiv.triposmobilesdk.storeandforward.StoredTransactionRecord
+import com.vantiv.triposmobilesdk.storeandforward.StoredTransactionState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +27,7 @@ import javax.inject.Inject
 
 
 @HiltViewModel
-class SalesViewModel @Inject constructor(application: Application, private val triposDataStoreRepo: TriposDataStoreRepo): AndroidViewModel(application), SaleRequestListener, DeviceInteractionListener {
+class SalesViewModel @Inject constructor(application: Application): AndroidViewModel(application), SaleRequestListener, DeviceInteractionListener {
     lateinit var sharedVtp: VTP
         internal set
     private lateinit var device: Device
@@ -67,6 +65,7 @@ class SalesViewModel @Inject constructor(application: Application, private val t
             addToList("Not Initialized!")
             return
         }
+        this.device = this.sharedVtp.device
         initializeCardInputReader(state)
     }
 
@@ -76,13 +75,32 @@ class SalesViewModel @Inject constructor(application: Application, private val t
                 try {
                     if (!isSalesProcessing) {
                         addToList("Initializing sales request...")
-                        viewModelScope.launch(Dispatchers.IO) {
-                            sharedVtp.processSaleRequest(setupSaleRequest(10.00), this@SalesViewModel, this@SalesViewModel)
-                        }.invokeOnCompletion {
-                            it?.let {
-                                print(it)
+                        try {
+                            if (sharedVtp.allStoredTransactions.size > 0) {
+                                sharedVtp.allStoredTransactions.forEach {
+                                    sharedVtp.allStoredTransactions.remove(it)
+                                }
+                            }
+                        } catch (e: StoredTransactionNotFoundException) {
+                            e.printStackTrace()
+                        }
+                        sharedVtp.setStatusListener {
+                            when (it) {
+                                VtpStatus.RunningSale -> {
+                                    print("running...")
+                                }
+                                VtpStatus.ProcessingCardInput -> {
+                                    print("Card input")
+                                }
+                                VtpStatus.SendingToHost -> {
+                                    print("Sending to host")
+                                }
+                                VtpStatus.GettingContinuingEmvTransaction -> {
+                                    print("EMV")
+                                }
                             }
                         }
+                        sharedVtp.processSaleRequest(setupSaleRequest(2.00), this@SalesViewModel, this@SalesViewModel)
                     } else {
                         addToList("Processing payment...")
                     }

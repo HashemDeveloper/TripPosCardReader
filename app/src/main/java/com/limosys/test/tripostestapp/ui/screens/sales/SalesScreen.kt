@@ -155,6 +155,20 @@ fun SalesStatus(
                 defaultState = false
             })
         }
+        is SalesState.Error -> {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Button(onClick = {
+                    handleEvent.invoke(SalesState.SetupPayment)
+                    isHideRow = true
+                }) {
+                    Text(text = "Pay")
+                }
+            }
+        }
         else -> {}
     }
 }
