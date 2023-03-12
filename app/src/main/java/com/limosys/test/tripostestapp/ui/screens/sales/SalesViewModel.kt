@@ -1,11 +1,7 @@
 package com.limosys.test.tripostestapp.ui.screens.sales
 
 import android.app.Application
-import android.content.Context
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.viewModelScope
-import com.limosys.test.tripostestapp.repo.TriposDataStoreRepo
 import com.limosys.test.tripostestapp.ui.screens.states.DebugState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
 import com.vantiv.triposmobilesdk.*
@@ -13,16 +9,11 @@ import com.vantiv.triposmobilesdk.enums.*
 import com.vantiv.triposmobilesdk.exceptions.StoredTransactionNotFoundException
 import com.vantiv.triposmobilesdk.requests.SaleRequest
 import com.vantiv.triposmobilesdk.responses.SaleResponse
-import com.vantiv.triposmobilesdk.storeandforward.StoredTransactionRecord
-import com.vantiv.triposmobilesdk.storeandforward.StoredTransactionState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 import java.math.BigDecimal
-import java.util.concurrent.TimeoutException
+import java.util.*
 import javax.inject.Inject
 
 
@@ -120,11 +111,19 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
 
     private fun setupSaleRequest(amount: Double): SaleRequest {
         val saleRequest = SaleRequest()
+        saleRequest.laneNumber = "1"
+        saleRequest.referenceNumber = uniqueNumericValue(16)
+        saleRequest.ticketNumber = uniqueNumericValue(6)
         saleRequest.transactionAmount = BigDecimal(amount)
         saleRequest.cardholderPresentCode = CardHolderPresentCode.Present
         return saleRequest
     }
 
+    private fun uniqueNumericValue(range: Int): String {
+        val uuid = UUID.randomUUID()
+        val uuidString = uuid.toString().replace("-", "")
+        return uuidString.substring(0, range)
+    }
 
     override fun onAmountConfirmation(
         type: AmountConfirmationType?,
