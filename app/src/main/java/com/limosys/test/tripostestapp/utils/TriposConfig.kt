@@ -117,6 +117,7 @@ object TriposConfig {
     private fun setupTransactionConfiguration() {
         this.transactionConfig = TransactionConfiguration()
         this.transactionConfig.addressVerificationCondition = AddressVerificationCondition.Keyed
+        this.transactionConfig.isPartialApprovalAllowed = true
         this.transactionConfig.isAmountConfirmationEnabled = true
         this.transactionConfig.isDebitAllowed = true
         this.transactionConfig.isEmvAllowed = true
