@@ -9,4 +9,6 @@
     <string name="swipe_or_tap">Swipe your card</string>
     <string name="multi_device_dialog_title">Multiple device detected. Please choose one.</string>
     <string name="dialog_cancel">Cancel</string>
+    <string name="refund_title">Process Refund</string>
+    <string name="reversal_title">Process Reversal</string>
 </resources>

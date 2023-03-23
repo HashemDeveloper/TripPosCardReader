@@ -18,6 +18,10 @@ import androidx.navigation.NavHostController
 import com.limosys.test.tripostestapp.R
 import com.limosys.test.tripostestapp.component.DebugButton
 import com.limosys.test.tripostestapp.component.DisplayDebugList
+import com.limosys.test.tripostestapp.component.TriposOutLinedInputField
+import com.limosys.test.tripostestapp.component.TriposSingleButtonDialog
+import com.limosys.test.tripostestapp.component.styles.Spacing
+import com.limosys.test.tripostestapp.objects.TransactionDialogType
 import com.limosys.test.tripostestapp.ui.screens.states.DebugState
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
@@ -103,6 +107,30 @@ fun SalesStatus(
     var isHideRow by rememberSaveable {
         mutableStateOf(false)
     }
+    var displayTransactionRequestDialog by remember {
+        mutableStateOf(TransactionDialogType.NONE)
+    }
+    if (displayTransactionRequestDialog.isShow) {
+        TriposSingleButtonDialog(
+            modifier = Modifier.padding(all = Spacing.SMALL_16_DP.space),
+            title = getTransactionRequestDialogTitle(displayTransactionRequestDialog),
+            actionButtonText = stringResource(id = R.string.action_ok),
+            content = {
+                TriposOutLinedInputField(
+                    value = "",
+                    onValueChanged = {
+                       //TODO
+                    },
+                    hint = "Enter amount",
+                    label = "Enter Amount"
+                )
+            },
+            onDismissRequest = {
+                displayTransactionRequestDialog = TransactionDialogType.NONE
+            }) {
+            displayTransactionRequestDialog = TransactionDialogType.NONE
+        }
+    }
 
     when (initializationState) {
         is InitializationState.DeviceDisconnected -> {
@@ -139,11 +167,25 @@ fun SalesStatus(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Button(onClick = {
-                        handleEvent.invoke(SalesState.SetupPayment)
-                        isHideRow = true
-                    }) {
-                        Text(text = "Pay")
+                    Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                        Button(onClick = {
+                            handleEvent.invoke(SalesState.SetupPayment)
+                            isHideRow = true
+                        }) {
+                            Text(text = "Pay")
+                        }
+                        Button(onClick = {
+                            isHideRow = true
+                            displayTransactionRequestDialog = TransactionDialogType.REFUND
+                        }) {
+                            Text(text = "Refund")
+                        }
+                        Button(onClick = {
+                            displayTransactionRequestDialog = TransactionDialogType.REVERSAL
+                            isHideRow = true
+                        }) {
+                            Text(text = "Reversal")
+                        }
                     }
                 }
             }
@@ -170,5 +212,17 @@ fun SalesStatus(
             }
         }
         else -> {}
+    }
+}
+@Composable
+fun getTransactionRequestDialogTitle(displayTransactionRequestDialog: TransactionDialogType): String {
+    return when (displayTransactionRequestDialog.type) {
+        TransactionDialogType.REFUND.type -> {
+            stringResource(id = R.string.refund_title)
+        }
+        TransactionDialogType.REVERSAL.type -> {
+            stringResource(id = R.string.reversal_title)
+        }
+        else -> {""}
     }
 }

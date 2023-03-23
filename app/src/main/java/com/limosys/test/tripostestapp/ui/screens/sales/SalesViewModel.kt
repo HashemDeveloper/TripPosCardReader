@@ -7,6 +7,7 @@ import com.limosys.test.tripostestapp.ui.screens.states.SalesState
 import com.vantiv.triposmobilesdk.*
 import com.vantiv.triposmobilesdk.enums.*
 import com.vantiv.triposmobilesdk.exceptions.StoredTransactionNotFoundException
+import com.vantiv.triposmobilesdk.express.Transaction.ReversalType
 import com.vantiv.triposmobilesdk.requests.SaleRequest
 import com.vantiv.triposmobilesdk.responses.SaleResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -89,13 +90,13 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
                                 VtpStatus.GettingContinuingEmvTransaction -> {
                                     print("EMV")
                                 }
+                                else -> {}
                             }
                         }
-                        sharedVtp.processSaleRequest(setupSaleRequest(2.00), this@SalesViewModel, this@SalesViewModel)
+                        sharedVtp.processSaleRequest(setupSaleRequest(9.0), this@SalesViewModel, this@SalesViewModel)
                     } else {
                         addToList("Processing payment...")
                     }
-
                     sharedVtp.statusListener = VtpProcessStatusListener {
                         isSalesProcessing = it.statusOrderPosition != 0
                     }
@@ -108,13 +109,13 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
             else -> {}
         }
     }
-
     private fun setupSaleRequest(amount: Double): SaleRequest {
         val saleRequest = SaleRequest()
         saleRequest.laneNumber = "1"
         saleRequest.referenceNumber = uniqueNumericValue(16)
         saleRequest.ticketNumber = uniqueNumericValue(6)
         saleRequest.transactionAmount = BigDecimal(amount)
+//        saleRequest.tipAmount = BigDecimal(2.0)
         saleRequest.cardholderPresentCode = CardHolderPresentCode.Present
         return saleRequest
     }

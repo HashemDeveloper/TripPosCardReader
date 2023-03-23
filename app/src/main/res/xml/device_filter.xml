@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<resources>
+    <usb-device vendor-id="2816"  product-id="131" /> <!--ManufacturerName=INGENICO,ProductName=Link2500-->
+    <usb-device vendor-id="2816"  product-id="132" /> <!--ManufacturerName=INGENICO,ProductName=Lane3000-->
+</resources>

@@ -38,7 +38,10 @@ fun TriposSingleButtonDialog(
                 Button(
                     modifier = actionButtonModifier
                         .align(Alignment.End)
-                        .padding(end = Spacing.SMALL_16_DP.space, bottom = Spacing.SMALL_16_DP.space),
+                        .padding(
+                            end = Spacing.SMALL_16_DP.space,
+                            bottom = Spacing.SMALL_16_DP.space
+                        ),
                     onClick = {
                         onCancelClicked.invoke()
                     }) {
@@ -107,11 +110,19 @@ fun Preview_Dialogs() {
         modifier = Modifier,
         positiveButtonModifier = Modifier.padding(start = Spacing.SMALL_16_DP.space),
         negativeButtonModifier = Modifier.padding(start = Spacing.SMALL_12_DP.space),
-        title = "Are you sure?",
+        title = "Please enter an amount process refund",
         positiveButtonText = "Yes",
         negativeButtonText = "No",
         content = {
-                  Text(text = "If you do this your life will be doomed!")
+            Spacer(modifier = Modifier.padding(top = Spacing.SMALL_16_DP.space))
+                  Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                      TriposOutLinedInputField(
+                          value = "",
+                          onValueChanged = {},
+                          hint = "Enter amount",
+                          label = "Enter Amount"
+                      )
+                  }
         },
         onDismissRequest = {}, onPositiveAction = {}) {}
 }
