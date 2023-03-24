@@ -4,24 +4,21 @@ import android.app.Application
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.bbpos.bbdevice.BBDeviceController.BBDeviceControllerListener
 import com.google.gson.Gson
 import com.limosys.test.tripostestapp.objects.DeviceObj
 import com.limosys.test.tripostestapp.repo.ISharedPref
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.utils.TriposConfig
 import com.limosys.test.tripostestapp.utils.isBluetoothEnabled
-import com.vantiv.triposmobilesdk.BluetoothScanRequestListener
-import com.vantiv.triposmobilesdk.BuildConfig
-import com.vantiv.triposmobilesdk.Device
-import com.vantiv.triposmobilesdk.DeviceConnectionListener
-import com.vantiv.triposmobilesdk.VTP
+import com.vantiv.triposmobilesdk.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.lang.Exception
-import java.util.ArrayList
+import java.util.*
 import javax.inject.Inject
 
 @HiltViewModel
@@ -143,7 +140,9 @@ class InitializationViewModel @Inject constructor(application: Application, priv
     override fun onError(p0: Exception?) {
         debug(p0?.message ?: "")
         this._initializationState.value = InitializationState.DeviceConnectionError(p0?.message ?: "")
-        sharedVtp.deinitialize()
+        if (this.sharedVtp.isInitialized) {
+            sharedVtp.deinitialize()
+        }
         addToList("Error connecting to Device. Details: (${p0?.message})")
     }
 

@@ -45,12 +45,12 @@ object TriposConfig {
 
     private fun setupHostConfiguration() {
         val hostConfig = HostConfiguration()
-        this.credentials = Credentials("1231758","130F69C952A6CCDB5CC9CB95F81136E599152B8FE76629B16F4583BFDF276B126A92D701","364801784")
+        this.credentials = Credentials("1231759","A3995E653B30A981BD8D2806FB1C276574CA32C5A83FFC2F816F2F31AD3C613176C52001","364801785")
         hostConfig.acceptorId = this.credentials.acceptorID
         hostConfig.accountId = this.credentials.accountID
         hostConfig.accountToken = this.credentials.accountToken
 
-        this.app = Application("15018","TriposTestApp","0.0")
+        this.app = Application("15019","TriposTestApp","0.1")
         hostConfig.applicationId = this.app.applicationID
         hostConfig.applicationName = this.app.applicationName
         hostConfig.applicationVersion = this.app.applicationVersion
@@ -67,9 +67,8 @@ object TriposConfig {
         this.deviceConfig.terminalId = "1234"
         this.deviceConfig.terminalType = TerminalType.Mobile
 
-        val bluetoothConfiguration = BluetoothConfiguration()
-        bluetoothConfiguration.identifier = identifier
-        this.deviceConfig.bluetoothConfiguration = bluetoothConfiguration
+        this.deviceConfig.identifier = identifier
+
 
         // TCP/IP configuration
         val tcpIpConfiguration = TcpIpConfiguration()

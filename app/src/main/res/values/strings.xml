@@ -11,4 +11,5 @@
     <string name="dialog_cancel">Cancel</string>
     <string name="refund_title">Process Refund</string>
     <string name="reversal_title">Process Reversal</string>
+    <string name="sale_title">Process Sale</string>
 </resources>

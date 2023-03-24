@@ -13,7 +13,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.navigation.NavHostController
 import com.limosys.test.tripostestapp.R
 import com.limosys.test.tripostestapp.component.DebugButton
@@ -21,14 +22,13 @@ import com.limosys.test.tripostestapp.component.DisplayDebugList
 import com.limosys.test.tripostestapp.component.TriposOutLinedInputField
 import com.limosys.test.tripostestapp.component.TriposSingleButtonDialog
 import com.limosys.test.tripostestapp.component.styles.Spacing
-import com.limosys.test.tripostestapp.objects.TransactionDialogType
+import com.limosys.test.tripostestapp.objects.TriPOSTransactionType
 import com.limosys.test.tripostestapp.ui.screens.states.DebugState
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
 import com.limosys.test.tripostestapp.utils.*
-import com.vantiv.triposmobilesdk.CardData
+import com.vantiv.triposmobilesdk.responses.SaleResponse
 import kotlinx.coroutines.delay
-import org.intellij.lang.annotations.Identifier
 
 @Composable
 fun SalesScreen(
@@ -49,6 +49,7 @@ fun SalesScreen(
             DebugList(state = debugState)
         }
         Column(
+            modifier = Modifier.padding(top = Spacing.MEDIUM_18_DP.space),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -108,27 +109,49 @@ fun SalesStatus(
         mutableStateOf(false)
     }
     var displayTransactionRequestDialog by remember {
-        mutableStateOf(TransactionDialogType.NONE)
+        mutableStateOf(TriPOSTransactionType.NONE)
     }
+    var amountState by remember {
+        mutableStateOf("")
+    }
+    var formError by remember {
+        mutableStateOf(false)
+    }
+    var displayRefundReversalButton by remember {
+        mutableStateOf(false)
+    }
+    var saleResponse: SaleResponse ?= null
+    var saleResponseState by remember {
+        mutableStateOf(saleResponse)
+    }
+
     if (displayTransactionRequestDialog.isShow) {
         TriposSingleButtonDialog(
             modifier = Modifier.padding(all = Spacing.SMALL_16_DP.space),
-            title = getTransactionRequestDialogTitle(displayTransactionRequestDialog),
+            title = "Process ${displayTransactionRequestDialog.type}",
             actionButtonText = stringResource(id = R.string.action_ok),
             content = {
+                Text(text = "")
                 TriposOutLinedInputField(
-                    value = "",
+                    value = amountState,
+                    isError = formError,
                     onValueChanged = {
-                       //TODO
+                       amountState = it
                     },
+                    keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Done,
                     hint = "Enter amount",
-                    label = "Enter Amount"
+                    label = if (formError) "Amount is required!" else "Enter Amount"
                 )
             },
             onDismissRequest = {
-                displayTransactionRequestDialog = TransactionDialogType.NONE
+                displayTransactionRequestDialog = TriPOSTransactionType.NONE
             }) {
-            displayTransactionRequestDialog = TransactionDialogType.NONE
+            formError = amountState.isEmpty()
+            if (formError.not()) {
+                handleEvent.invoke(SalesState.SetupPayment(displayTransactionRequestDialog.type, amountState.toDouble(), saleResponseState))
+                displayTransactionRequestDialog = TriPOSTransactionType.NONE
+            }
         }
     }
 
@@ -162,32 +185,19 @@ fun SalesStatus(
                 }
 
             } else {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                        Button(onClick = {
-                            handleEvent.invoke(SalesState.SetupPayment)
-                            isHideRow = true
-                        }) {
-                            Text(text = "Pay")
-                        }
-                        Button(onClick = {
-                            isHideRow = true
-                            displayTransactionRequestDialog = TransactionDialogType.REFUND
-                        }) {
-                            Text(text = "Refund")
-                        }
-                        Button(onClick = {
-                            displayTransactionRequestDialog = TransactionDialogType.REVERSAL
-                            isHideRow = true
-                        }) {
-                            Text(text = "Reversal")
-                        }
-                    }
-                }
+                DisplayTransactionButtons(onSaleClicked = {
+                    isHideRow = true
+                    displayTransactionRequestDialog = TriPOSTransactionType.SALE
+                }, onRefundClicked = {
+                    isHideRow = true
+                    displayTransactionRequestDialog = TriPOSTransactionType.REFUND
+                }, onReversalClicked = {
+                    isHideRow = true
+                    displayTransactionRequestDialog = TriPOSTransactionType.REVERSAL
+                }, onReturnClicked = {
+                    isHideRow = true
+                    displayTransactionRequestDialog = TriPOSTransactionType.RETURN
+                }, displayRefundReversalButton = displayRefundReversalButton)
             }
         }
         is SalesState.Completed -> {
@@ -195,34 +205,74 @@ fun SalesStatus(
                 delay(5000)
                 handleEvent(SalesState.None)
                 defaultState = false
+                displayRefundReversalButton = true
+                saleResponse = state.saleResponse
+                saleResponseState = saleResponse
             })
         }
         is SalesState.Error -> {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Button(onClick = {
-                    handleEvent.invoke(SalesState.SetupPayment)
-                    isHideRow = true
-                }) {
-                    Text(text = "Pay")
-                }
-            }
+            DisplayTransactionButtons(onSaleClicked = {
+                isHideRow = true
+                displayTransactionRequestDialog = TriPOSTransactionType.SALE
+            }, onRefundClicked = {
+                isHideRow = true
+                displayTransactionRequestDialog = TriPOSTransactionType.REFUND
+            }, onReversalClicked = {
+                isHideRow = true
+                displayTransactionRequestDialog = TriPOSTransactionType.REVERSAL
+            }, onReturnClicked = {
+                isHideRow = true
+                displayTransactionRequestDialog = TriPOSTransactionType.RETURN
+            }, displayRefundReversalButton =  displayRefundReversalButton)
         }
         else -> {}
     }
 }
+
 @Composable
-fun getTransactionRequestDialogTitle(displayTransactionRequestDialog: TransactionDialogType): String {
-    return when (displayTransactionRequestDialog.type) {
-        TransactionDialogType.REFUND.type -> {
-            stringResource(id = R.string.refund_title)
+private fun DisplayTransactionButtons(
+    onSaleClicked: () -> Unit,
+    onRefundClicked: () -> Unit,
+    onReversalClicked: () -> Unit,
+    onReturnClicked: () -> Unit,
+    displayRefundReversalButton: Boolean
+) {
+    Column(
+        modifier = Modifier.padding(
+            start = Spacing.SMALL_16_DP.space,
+            end = Spacing.SMALL_16_DP.space
+        ),
+        verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Button(
+            modifier = Modifier.fillMaxWidth(),
+            onClick = {
+               onSaleClicked.invoke()
+            }) {
+            Text(text = "Pay")
         }
-        TransactionDialogType.REVERSAL.type -> {
-            stringResource(id = R.string.reversal_title)
+        if (displayRefundReversalButton) {
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    onRefundClicked.invoke()
+                }) {
+                Text(text = "Refund")
+            }
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    onReversalClicked.invoke()
+                }) {
+                Text(text = "Reversal")
+            }
+            Button(
+                modifier = Modifier.fillMaxWidth(),
+                onClick = {
+                    onReturnClicked.invoke()
+                }) {
+                Text(text = "Return")
+            }
         }
-        else -> {""}
     }
 }

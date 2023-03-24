@@ -114,15 +114,13 @@ fun Preview_Dialogs() {
         positiveButtonText = "Yes",
         negativeButtonText = "No",
         content = {
-            Spacer(modifier = Modifier.padding(top = Spacing.SMALL_16_DP.space))
-                  Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                      TriposOutLinedInputField(
-                          value = "",
-                          onValueChanged = {},
-                          hint = "Enter amount",
-                          label = "Enter Amount"
-                      )
-                  }
+            Text(text = "")
+            TriposOutLinedInputField(
+                value = "",
+                onValueChanged = {},
+                hint = "Enter amount",
+                label = "Enter Amount"
+            )
         },
         onDismissRequest = {}, onPositiveAction = {}) {}
 }

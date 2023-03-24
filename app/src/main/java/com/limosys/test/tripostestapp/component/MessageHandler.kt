@@ -1,5 +1,6 @@
 package com.limosys.test.tripostestapp.component
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,7 +41,7 @@ fun DisplaySnackBar(data: ComposeData) {
     val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
-        modifier = Modifier,
+        modifier = Modifier.fillMaxSize(),
         scaffoldState = scaffoldState
     ) {
         LaunchedEffect(key1 = true, block = {

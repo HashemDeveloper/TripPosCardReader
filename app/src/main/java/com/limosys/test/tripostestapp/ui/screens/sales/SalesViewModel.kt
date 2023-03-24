@@ -2,13 +2,20 @@ package com.limosys.test.tripostestapp.ui.screens.sales
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import com.limosys.test.tripostestapp.objects.TriPOSTransactionType
 import com.limosys.test.tripostestapp.ui.screens.states.DebugState
 import com.limosys.test.tripostestapp.ui.screens.states.SalesState
 import com.vantiv.triposmobilesdk.*
 import com.vantiv.triposmobilesdk.enums.*
 import com.vantiv.triposmobilesdk.exceptions.StoredTransactionNotFoundException
-import com.vantiv.triposmobilesdk.express.Transaction.ReversalType
+import com.vantiv.triposmobilesdk.express.Terminal
+import com.vantiv.triposmobilesdk.requests.RefundRequest
+import com.vantiv.triposmobilesdk.requests.ReturnRequest
+import com.vantiv.triposmobilesdk.requests.ReversalRequest
 import com.vantiv.triposmobilesdk.requests.SaleRequest
+import com.vantiv.triposmobilesdk.responses.RefundResponse
+import com.vantiv.triposmobilesdk.responses.ReturnResponse
+import com.vantiv.triposmobilesdk.responses.ReversalResponse
 import com.vantiv.triposmobilesdk.responses.SaleResponse
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +26,9 @@ import javax.inject.Inject
 
 
 @HiltViewModel
-class SalesViewModel @Inject constructor(application: Application): AndroidViewModel(application), SaleRequestListener, DeviceInteractionListener {
+class SalesViewModel @Inject constructor(application: Application): AndroidViewModel(application), SaleRequestListener,
+    RefundRequestListener, ReversalRequestListener,
+    DeviceInteractionListener, ReturnListener {
     lateinit var sharedVtp: VTP
         internal set
     private lateinit var device: Device
@@ -63,7 +72,7 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
 
     private fun initializeCardInputReader(state: SalesState) {
         when (state) {
-            SalesState.SetupPayment -> {
+            is SalesState.SetupPayment -> {
                 try {
                     if (!isSalesProcessing) {
                         addToList("Initializing sales request...")
@@ -93,7 +102,20 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
                                 else -> {}
                             }
                         }
-                        sharedVtp.processSaleRequest(setupSaleRequest(9.0), this@SalesViewModel, this@SalesViewModel)
+                        when (state.transactionType) {
+                            TriPOSTransactionType.SALE.type -> {
+                                sharedVtp.processSaleRequest(setupSaleRequest(state.amount), this@SalesViewModel, this@SalesViewModel)
+                            }
+                            TriPOSTransactionType.REFUND.type -> {
+                                sharedVtp.processRefundRequest(setupRefundRequest(state.amount, state.saleResponse), this@SalesViewModel, this@SalesViewModel)
+                            }
+                            TriPOSTransactionType.REVERSAL.type -> {
+                                sharedVtp.processReversalRequest(setupReversalRequest(state.amount, state.saleResponse), this@SalesViewModel)
+                            }
+                            TriPOSTransactionType.RETURN.type -> {
+                                sharedVtp.processReturnRequest(setupReturnRequest(state.amount, state.saleResponse), this@SalesViewModel)
+                            }
+                        }
                     } else {
                         addToList("Processing payment...")
                     }
@@ -109,6 +131,46 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
             else -> {}
         }
     }
+
+    private fun setupReturnRequest(amount: Double, saleResponse: SaleResponse?): ReturnRequest? {
+        val returnRequest = ReturnRequest()
+        saleResponse?.let {
+            returnRequest.paymentType = it.paymentType
+            returnRequest.transactionID = it.host?.transactionID
+            returnRequest.referenceNumber = it.referenceNumber
+        }
+        returnRequest.laneNumber = "1"
+        returnRequest.transactionAmount = BigDecimal(amount)
+        returnRequest.cardPresentCode= Terminal.CardPresentCode.Present
+        return returnRequest
+    }
+
+    private fun setupReversalRequest(amount: Double, saleResponse: SaleResponse?): ReversalRequest {
+        val reversalRequest = ReversalRequest()
+        saleResponse?.let {
+            reversalRequest.transactionId = it.host?.transactionID
+            reversalRequest.ebtType = it.ebtType
+            reversalRequest.paymentType = it.paymentType
+            reversalRequest.referenceNumber= it.referenceNumber
+        }
+        reversalRequest.reversalType = ReversalType.System
+        reversalRequest.laneNumber = "1"
+        reversalRequest.transactionAmount = BigDecimal(amount)
+        reversalRequest.cardholderPresentCode = CardHolderPresentCode.Present
+        return reversalRequest
+    }
+
+    private fun setupRefundRequest(amount: Double, saleResponse: SaleResponse?): RefundRequest {
+        val refundRequest = RefundRequest()
+        saleResponse?.let {
+            refundRequest.referenceNumber = it.referenceNumber
+        }
+        refundRequest.laneNumber = "1"
+        refundRequest.transactionAmount = BigDecimal(amount)
+        refundRequest.cardholderPresentCode =  CardHolderPresentCode.Present
+        return refundRequest
+    }
+
     private fun setupSaleRequest(amount: Double): SaleRequest {
         val saleRequest = SaleRequest()
         saleRequest.laneNumber = "1"
@@ -178,12 +240,48 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
 
     override fun onSaleRequestCompleted(saleResponse: SaleResponse?) {
         print(saleResponse)
-        this._salesState.value = SalesState.Completed
+        this._salesState.value = SalesState.Completed(saleResponse)
         addToList("Sales Response: ${saleResponse?.transactionStatus}")
     }
 
     override fun onSaleRequestError(error: Exception?) {
         addToList("Sale Request Error ${error?.message}")
         this._salesState.value = SalesState.Error(error?.message)
+    }
+
+    override fun onRefundRequestCompleted(refundRes: RefundResponse?) {
+        print(refundRes)
+        this._salesState.value = SalesState.Completed(null)
+        addToList("Sales Response: ${refundRes?.transactionStatus}")
+    }
+
+    override fun onRefundRequestError(errorRes: java.lang.Exception?) {
+        print(errorRes)
+        addToList("Refund Request Error ${errorRes?.message}")
+        this._salesState.value = SalesState.Error(errorRes?.message)
+    }
+
+    override fun onReversalRequestCompleted(reversalRes: ReversalResponse?) {
+        print(reversalRes)
+        this._salesState.value = SalesState.Completed(null)
+        addToList("Sales Response: ${reversalRes?.transactionStatus}")
+    }
+
+    override fun onReversalRequestError(errorRes: java.lang.Exception?) {
+        print(errorRes)
+        addToList("Reversal Request Error ${errorRes?.message}")
+        this._salesState.value = SalesState.Error(errorRes?.message)
+    }
+
+    override fun onReturnRequestCompleted(returnRes: ReturnResponse?) {
+        print(returnRes)
+        this._salesState.value = SalesState.Completed(null)
+        addToList("Sales Response: ${returnRes?.transactionStatus}")
+    }
+
+    override fun onReturnRequestError(errorRes: java.lang.Exception?) {
+        print(errorRes)
+        addToList("Reversal Request Error ${errorRes?.message}")
+        this._salesState.value = SalesState.Error(errorRes?.message)
     }
 }
