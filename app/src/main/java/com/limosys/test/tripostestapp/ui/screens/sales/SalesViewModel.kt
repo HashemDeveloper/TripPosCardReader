@@ -8,7 +8,9 @@ import com.limosys.test.tripostestapp.ui.screens.states.SalesState
 import com.vantiv.triposmobilesdk.*
 import com.vantiv.triposmobilesdk.enums.*
 import com.vantiv.triposmobilesdk.exceptions.StoredTransactionNotFoundException
+import com.vantiv.triposmobilesdk.express.CreditCardReversalMessage
 import com.vantiv.triposmobilesdk.express.Terminal
+import com.vantiv.triposmobilesdk.requests.CreditCardAdjustmentRequest
 import com.vantiv.triposmobilesdk.requests.RefundRequest
 import com.vantiv.triposmobilesdk.requests.ReturnRequest
 import com.vantiv.triposmobilesdk.requests.ReversalRequest
@@ -75,7 +77,6 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
             is SalesState.SetupPayment -> {
                 try {
                     if (!isSalesProcessing) {
-                        addToList("Initializing sales request...")
                         try {
                             if (sharedVtp.allStoredTransactions.size > 0) {
                                 sharedVtp.allStoredTransactions.forEach {
@@ -104,15 +105,19 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
                         }
                         when (state.transactionType) {
                             TriPOSTransactionType.SALE.type -> {
+                                addToList("Initializing sales request...")
                                 sharedVtp.processSaleRequest(setupSaleRequest(state.amount), this@SalesViewModel, this@SalesViewModel)
                             }
                             TriPOSTransactionType.REFUND.type -> {
+                                addToList("Initialized refund request...")
                                 sharedVtp.processRefundRequest(setupRefundRequest(state.amount, state.saleResponse), this@SalesViewModel, this@SalesViewModel)
                             }
                             TriPOSTransactionType.REVERSAL.type -> {
+                                addToList("Initialized reversal request. Please press Pay to process reversal.")
                                 sharedVtp.processReversalRequest(setupReversalRequest(state.amount, state.saleResponse), this@SalesViewModel)
                             }
                             TriPOSTransactionType.RETURN.type -> {
+                                addToList("Initialized return request. Please press Pay to process return.")
                                 sharedVtp.processReturnRequest(setupReturnRequest(state.amount, state.saleResponse), this@SalesViewModel)
                             }
                         }
