@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bbpos.bbdevice.BBDeviceController.BBDeviceControllerListener
 import com.google.gson.Gson
+import com.google.gson.JsonSyntaxException
 import com.limosys.test.tripostestapp.objects.DeviceObj
 import com.limosys.test.tripostestapp.repo.ISharedPref
 import com.limosys.test.tripostestapp.ui.screens.states.InitializationState
@@ -108,26 +109,27 @@ class InitializationViewModel @Inject constructor(application: Application, priv
     override fun onConnected(device: Device?, description: String?, model: String?, serialNumber: String?) {
         debug("Connected")
         addToList("Connected")
-        val deviceList: ArrayList<String> = arrayListOf()
         val deviceObj = DeviceObj()
         val identifier: String = this.iSharedPref.getIdentifier()
-        if (identifier.isNotEmpty()) {
-            val obj: DeviceObj = this.gson.fromJson(identifier, DeviceObj::class.java)
-            obj.devices.forEach { deviceId ->
-                deviceList.add(deviceId)
-                if (deviceId != serialNumber) {
-                    deviceList.add(serialNumber ?: "")
-                    deviceObj.devices = deviceList
-                }
+        val deviceList: ArrayList<String> = if (identifier.isNotEmpty()) {
+            try {
+                val obj: DeviceObj = this.gson.fromJson(identifier, DeviceObj::class.java)
+                obj.devices
+            } catch (e: JsonSyntaxException) {
+                ArrayList()
             }
         } else {
+            ArrayList()
+        }
+
+        if (!deviceList.contains(serialNumber)) {
             deviceList.add(serialNumber ?: "")
-            deviceObj.devices = deviceList
         }
+
+        deviceObj.devices = deviceList
         val jsonDeviceObj = gson.toJson(deviceObj)
-        if (deviceObj.devices.isNotEmpty()) {
-            this.iSharedPref.setIdentifier(jsonDeviceObj)
-        }
+        this.iSharedPref.setIdentifier(jsonDeviceObj)
+
         this._initializationState.value = InitializationState.DeviceConnected
     }
 

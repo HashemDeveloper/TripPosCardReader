@@ -1,6 +1,7 @@
 package com.limosys.test.tripostestapp.ui.screens.sales
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import com.limosys.test.tripostestapp.objects.TriPOSTransactionType
 import com.limosys.test.tripostestapp.ui.screens.states.DebugState
@@ -244,7 +245,8 @@ class SalesViewModel @Inject constructor(application: Application): AndroidViewM
     }
 
     override fun onSaleRequestCompleted(saleResponse: SaleResponse?) {
-        print(saleResponse)
+        Log.i("TriposSale", "$saleResponse")
+        print(saleResponse?.emv?.cryptogram)
         this._salesState.value = SalesState.Completed(saleResponse)
         addToList("Sales Response: ${saleResponse?.transactionStatus}")
     }
