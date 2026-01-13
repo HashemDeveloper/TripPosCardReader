@@ -1,0 +1,1 @@
+TripPosCardReader is an Android-based Point of Sale (POS) application designed to integrate with TripOS card-reading hardware for processing card transactions. The project demonstrates how to connect Android applications with external payment SDKs to handle card payments, refunds, and reversals in a structured and secure manner.
